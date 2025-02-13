@@ -15,6 +15,7 @@ type Config struct {
 	HTTPServer  `yaml:"http_server"`
 	IpsFilePath string `env:"IPS_PATH"`
 	AllowedIps  []string
+	Resources   []resource `yaml:"resources"`
 }
 
 type HTTPServer struct {
@@ -23,6 +24,12 @@ type HTTPServer struct {
 	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
 	User        string        `yaml:"user" env-required:"true"`
 	Password    string        `yaml:"password" env-required:"true" env:"HTTP_SERVER_PASSWORD"`
+}
+
+type resource struct {
+	Name     string `yaml:"name"`
+	Endpoint string `yaml:"endpoint"`
+	Host     string `yaml:"host"`
 }
 
 func LoadConfig() (*Config, error) {

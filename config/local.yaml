@@ -5,3 +5,14 @@ http_server:
   idle_timeout: 60s
   user: "user"
   password: "password"
+
+resources:
+  - name: Server1
+    endpoint: /server1
+    host: "http://localhost:9001"
+  - name: Server2
+    endpoint: /server2
+    host: "http://localhost:9002"
+  - name: Server3
+    endpoint: /server3
+    host: "http://localhost:9003"
