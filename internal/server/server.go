@@ -1,33 +1,93 @@
+// server/server.go
 package server
 
 import (
-	"firewall/internal/config"
-	"firewall/internal/proxy"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"firewall/internal/config"
+	"firewall/internal/proxy"
 )
 
-func Start(cfg *config.Config) error {
-	addr := cfg.HTTPServer.Address
+type Server struct {
+	addr    string
+	handler http.Handler
+	srv     *http.Server
+}
+
+func NewServer(cfg *config.Config) (*Server, error) {
+	proxyResources := make([]proxy.Resource, len(cfg.Resources))
+	for i, r := range cfg.Resources {
+		proxyResources[i] = proxy.Resource{
+			Host:     r.Host,
+			Endpoint: r.Endpoint,
+		}
+	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/ping", ping)
 
-	for _, resource := range cfg.Resources {
-		url, _ := url.Parse(resource.Host)
-		mux.HandleFunc(resource.Endpoint, proxy.ProxyRequestHandler(url, resource.Endpoint))
+	mux.HandleFunc("/ping", pingHandler)
+
+	proxyHandler, err := proxy.NewProxyHandler(proxyResources)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create proxy handler: %v", err)
 	}
 
-	log.Printf("Starting proxy server on %s\n", addr)
+	handler := loggingMiddleware(proxyHandler)
 
-	if err := http.ListenAndServe(cfg.HTTPServer.Address, mux); err != nil {
-		return fmt.Errorf("error starting server: %v", err)
+	return &Server{
+		addr:    cfg.HTTPServer.Address,
+		handler: handler,
+		srv:     &http.Server{Addr: cfg.HTTPServer.Address, Handler: handler},
+	}, nil
+}
+
+func (s *Server) Start(ctx context.Context) error {
+	go func() {
+		log.Printf("Starting server on %s", s.addr)
+		if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("server startup failed: %v", err)
+			os.Exit(1)
+		}
+	}()
+
+	stopChan := make(chan os.Signal, 1)
+	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-ctx.Done():
+		return s.shutdown()
+	case sig := <-stopChan:
+		log.Printf("received signal %s", sig)
+		return s.shutdown()
 	}
+}
+
+func (s *Server) shutdown() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := s.srv.Shutdown(ctx)
+	if err != nil {
+		return fmt.Errorf("server shutdown failed: %v", err)
+	}
+	log.Println("server stopped")
 	return nil
 }
 
-func ping(w http.ResponseWriter, r *http.Request) {
+func pingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("pong"))
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("Received request: method=%s, path=%s, remote=%s", r.Method, r.URL.Path, r.RemoteAddr)
+		next.ServeHTTP(w, r)
+	})
 }

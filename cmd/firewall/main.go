@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"firewall/internal/config"
 	"firewall/internal/server"
 	"log"
@@ -12,7 +13,12 @@ func main() {
 		log.Fatalf("Error loading allowed IPs: %v", err)
 	}
 
-	err = server.Start(cfg)
+	server, err := server.NewServer(cfg)
+	if err != nil {
+		log.Fatalf("Error initializing server: %v", err)
+	}
+
+	err = server.Start(context.Background())
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
