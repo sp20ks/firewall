@@ -1,29 +1,31 @@
-BINARY=bin/firewall
-ROOT_FOLDER=./cmd/firewall
+NETWORK_NAME=firewall-network
+FIREWALL_IMAGE=firewall
+FIREWALL_CONTAINER=firewall
 
 .PHONY: build
 build:
-	GOARCH=amd64 GOOS=darwin go build -o ${BINARY}-darwin ${ROOT_FOLDER}
-	GOARCH=amd64 GOOS=linux go build -o ${BINARY}-linux ${ROOT_FOLDER}
-	GOARCH=amd64 GOOS=windows go build -o ${BINARY}-windows ${ROOT_FOLDER}
+	docker build -t $(FIREWALL_IMAGE) .
 
-.PHONY: run
-run:
-	go run ${ROOT_FOLDER}
-
-.PHONY: clean
-clean:
-	go clean
-	rm -r -f bin
+.PHONY: network
+network:
+	@docker network ls | grep -q $(NETWORK_NAME) || docker network create $(NETWORK_NAME)
 
 .PHONY: run-containers
-run-containers:
-	docker run --rm -d -p 9001:80 --name server1 kennethreitz/httpbin
-	docker run --rm -d -p 9002:80 --name server2 kennethreitz/httpbin
-	docker run --rm -d -p 9003:80 --name server3 kennethreitz/httpbin
+run-containers: network
+	docker run --rm -d --network $(NETWORK_NAME) --name server1 -p 9001:80 kennethreitz/httpbin
+	docker run --rm -d --network $(NETWORK_NAME) --name server2 -p 9002:80 kennethreitz/httpbin
+	docker run --rm -d --network $(NETWORK_NAME) --name server3 -p 9003:80 kennethreitz/httpbin
+	docker run --rm -d --network $(NETWORK_NAME) -p 8080:8080 --name $(FIREWALL_CONTAINER) $(FIREWALL_IMAGE)
 
 .PHONY: stop
 stop:
-	docker stop server1
-	docker stop server2
-	docker stop server3
+	docker stop server1 server2 server3 $(FIREWALL_CONTAINER) || true
+
+.PHONY: clean
+clean: stop
+	docker network rm $(NETWORK_NAME) || true
+	docker rmi $(FIREWALL_IMAGE) || true
+
+.PHONY: logs
+logs:
+	docker logs -f $(FIREWALL_CONTAINER)

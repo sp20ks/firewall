@@ -1,6 +1,6 @@
 env: "local"
 http_server:
-  address: "localhost:8080"
+  address: "0.0.0.0:8080"
   timeout: 4s
   idle_timeout: 60s
   user: "user"
@@ -9,10 +9,10 @@ http_server:
 resources:
   - name: Server1
     endpoint: /server1
-    host: "http://localhost:9001"
+    host: "http://server1:80"
   - name: Server2
     endpoint: /server2
-    host: "http://localhost:9002"
+    host: "http://server2:80"
   - name: Server3
     endpoint: /server3
-    host: "http://localhost:9003"
+    host: "http://server3:80"

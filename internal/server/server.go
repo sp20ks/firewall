@@ -30,10 +30,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		}
 	}
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/ping", pingHandler)
-
 	proxyHandler, err := proxy.NewProxyHandler(proxyResources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy handler: %v", err)
