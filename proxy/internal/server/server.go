@@ -1,4 +1,3 @@
-// server/server.go
 package server
 
 import (
@@ -11,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"firewall/internal/config"
-	"firewall/internal/proxy"
+	"proxy/internal/config"
+	"proxy/internal/proxy"
 )
 
 type Server struct {
@@ -75,10 +74,6 @@ func (s *Server) shutdown() error {
 	}
 	log.Println("server stopped")
 	return nil
-}
-
-func pingHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("pong"))
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {

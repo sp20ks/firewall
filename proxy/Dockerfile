@@ -8,8 +8,8 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o bin/firewall ./cmd/firewall
+RUN go build -o bin/proxy ./cmd/proxy
 
 EXPOSE 8080
 
-CMD [ "/app/bin/firewall" ]
+CMD ["/app/bin/proxy"]

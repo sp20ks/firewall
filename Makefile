@@ -1,10 +1,14 @@
 NETWORK_NAME=firewall-network
-FIREWALL_IMAGE=firewall
-FIREWALL_CONTAINER=firewall
+PROXY_IMAGE=proxy
+PROXY_CONTAINER=proxy
+PROXY_PORT=8080
 
 .PHONY: build
-build:
-	docker build -t $(FIREWALL_IMAGE) .
+build: build-proxy
+
+.PHONY: build-proxy
+build-proxy:
+	docker build -t $(PROXY_IMAGE) ./proxy
 
 .PHONY: network
 network:
@@ -15,17 +19,17 @@ run-containers: network
 	docker run --rm -d --network $(NETWORK_NAME) --name server1 -p 9001:80 kennethreitz/httpbin
 	docker run --rm -d --network $(NETWORK_NAME) --name server2 -p 9002:80 kennethreitz/httpbin
 	docker run --rm -d --network $(NETWORK_NAME) --name server3 -p 9003:80 kennethreitz/httpbin
-	docker run --rm -d --network $(NETWORK_NAME) -p 8080:8080 --name $(FIREWALL_CONTAINER) $(FIREWALL_IMAGE)
+	docker run --rm -d --network $(NETWORK_NAME) -p 8080:8080 --name $(PROXY_CONTAINER) $(PROXY_IMAGE)
 
 .PHONY: stop
 stop:
-	docker stop server1 server2 server3 $(FIREWALL_CONTAINER) || true
+	docker stop server1 server2 server3 $(PROXY_CONTAINER) || true
 
 .PHONY: clean
 clean: stop
-	docker network rm $(NETWORK_NAME) || true
-	docker rmi $(FIREWALL_IMAGE) || true
+	@docker network rm $(NETWORK_NAME) || true
+	@docker rmi $(PROXY_IMAGE) || true
 
-.PHONY: logs
-logs:
-	docker logs -f $(FIREWALL_CONTAINER)
+.PHONY: logs-proxy
+logs-proxy:
+	docker logs -f $(PROXY_CONTAINER)

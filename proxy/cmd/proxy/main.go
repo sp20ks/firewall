@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"firewall/internal/config"
-	"firewall/internal/server"
+	"proxy/internal/config"
+	"proxy/internal/server"
 	"log"
 )
 
