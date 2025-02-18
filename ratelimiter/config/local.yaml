@@ -1,0 +1,7 @@
+env: "local"
+rate_limiter_server:
+  address: "0.0.0.0:8081"
+  timeout: 4s
+  idle_timeout: 60s
+  max_tokens: 5
+  refill_rate: 0.5
