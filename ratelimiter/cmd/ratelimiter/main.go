@@ -18,9 +18,6 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/rate_limit", ratelimiter.HandleCheckLimit(ipRateLimiter))
 
-		log.Printf("Starting server on %s", cfg.Address)
-		http.ListenAndServe(cfg.Address, mux)
-		// if err != nil {
-		// 	log.Fatalf("Error starting server: %v", err)
-		// }
+	log.Printf("Starting server on %s", cfg.Address)
+	http.ListenAndServe(cfg.Address, mux)
 }

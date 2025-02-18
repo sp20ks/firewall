@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -33,14 +32,10 @@ type resource struct {
 }
 
 func LoadConfig() (*Config, error) {
-	if err := godotenv.Load(); err != nil {
-		return nil, fmt.Errorf("error loading .env file: %w", err)
-	}
-
-	configPath := os.Getenv("CONFIG_PATH")
+	configPath := os.Getenv("PROXY_CONFIG_PATH")
 
 	if configPath == "" {
-		return nil, fmt.Errorf("CONFIG_PATH is not set")
+		return nil, fmt.Errorf("PROXY_CONFIG_PATH is not set")
 	}
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {

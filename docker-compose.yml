@@ -1,0 +1,54 @@
+services:
+  proxy:
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
+    container_name: proxy
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    networks:
+      - firewall-network
+    depends_on:
+      - ratelimiter
+
+  ratelimiter:
+    build:
+      context: ./ratelimiter
+      dockerfile: Dockerfile
+    container_name: ratelimiter
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    networks:
+      - firewall-network
+
+  server1:
+    image: kennethreitz/httpbin
+    container_name: server1
+    ports:
+      - "9001:80"
+    networks:
+      - firewall-network
+
+  server2:
+    image: kennethreitz/httpbin
+    container_name: server2
+    ports:
+      - "9002:80"
+    networks:
+      - firewall-network
+
+  server3:
+    image: kennethreitz/httpbin
+    container_name: server3
+    ports:
+      - "9003:80"
+    networks:
+      - firewall-network
+
+networks:
+  firewall-network:
+    driver: bridge
