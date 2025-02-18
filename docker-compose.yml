@@ -24,6 +24,17 @@ services:
       - .env
     networks:
       - firewall-network
+    
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - firewall-network
+    volumes:
+      - redis_data:/data
 
   server1:
     image: kennethreitz/httpbin
@@ -52,3 +63,6 @@ services:
 networks:
   firewall-network:
     driver: bridge
+
+volumes:
+  redis_data:

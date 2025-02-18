@@ -1,17 +1,11 @@
 package ratelimiter
 
 import (
-	"sync"
 	"time"
-)
 
-type RateLimiter struct {
-	tokens         float64   // Current number of tokens
-	maxTokens      float64   // Maximum tokens allowed
-	refillRate     float64   // Tokens added per second
-	lastRefillTime time.Time // Last time tokens were refilled
-	mutex          sync.Mutex
-}
+	"github.com/redis/go-redis/v9"
+	"github.com/go-redis/redis_rate/v10"
+)
 
 func NewRateLimiter(maxTokens, refillRate float64) *RateLimiter {
 	return &RateLimiter{
@@ -47,18 +41,15 @@ func (r *RateLimiter) Allow() bool {
 	return false
 }
 
-type IPRateLimiter struct {
-	limiters   map[string]*RateLimiter
-	mutex      sync.Mutex
-	maxTokens  float64
-	refillRate float64
-}
+func NewIPRateLimiter(maxTokens, refillRate float64, redisAddr string) *IPRateLimiter {
+	rdb := redis.NewClient(&redis.Options{
+		Addr: redisAddr,
+	})
 
-func NewIPRateLimiter(maxTokens, refillRate float64) *IPRateLimiter {
 	return &IPRateLimiter{
-		limiters:   make(map[string]*RateLimiter),
-		maxTokens:  maxTokens,
-		refillRate: refillRate,
+		redisClient: rdb,
+		maxTokens:   maxTokens,
+		refillRate:  refillRate,
 	}
 }
 
