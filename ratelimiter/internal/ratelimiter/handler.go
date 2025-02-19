@@ -9,16 +9,17 @@ func HandleCheckLimit(ipRateLimiter *IPRateLimiter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := r.URL.Query().Get("ip")
 		if ip == "" {
-			log.Printf("Invalid IP received")
-			http.Error(w, "Invalid IP", http.StatusInternalServerError)
+			log.Printf("Missing required 'ip' parameter")
+			http.Error(w, "Missing required 'ip' parameter", http.StatusBadRequest)
 			return
 		}
 
 		if err := ipRateLimiter.Allow(ip); err != nil {
-			log.Printf("Rate Limit Exceeded IP=%s", ip)
-			http.Error(w, "Rate Limit Exceeded", http.StatusTooManyRequests)
-		} else {
-			w.WriteHeader(http.StatusOK)
+			log.Printf("Rate limit exceeded for IP %s: %v", ip, err)
+			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+			return
 		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }

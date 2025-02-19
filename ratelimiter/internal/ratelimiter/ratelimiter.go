@@ -35,3 +35,7 @@ func (r *IPRateLimiter) Allow(clientIP string) error {
 
 	return nil
 }
+
+func (r *IPRateLimiter) Close() error {
+	return r.rdb.Close()
+}
