@@ -14,11 +14,11 @@ func HandleCheckLimit(ipRateLimiter *IPRateLimiter) http.HandlerFunc {
 			return
 		}
 
-		if ipRateLimiter.Allow(ip) {
-			w.WriteHeader(http.StatusOK)
-		} else {
+		if err := ipRateLimiter.Allow(ip); err != nil {
 			log.Printf("Rate Limit Exceeded IP=%s", ip)
 			http.Error(w, "Rate Limit Exceeded", http.StatusTooManyRequests)
+		} else {
+			w.WriteHeader(http.StatusOK)
 		}
 	}
 }

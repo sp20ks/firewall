@@ -13,10 +13,8 @@ type Config struct {
 }
 
 type RateLimiterServer struct {
-	Address    string  `yaml:"address" env-default:"localhost:8081"`
-	MaxTokens  float64 `yaml:"max_tokens" env-default:"5"`
-	RefillRate float64 `yaml:"refill_rate" env-default:"0.5"`
-	RedisAddr  string  `yaml:"redis_address"`
+	Address   string `yaml:"address" env-default:"localhost:8081"`
+	RedisAddr string `yaml:"redis_address"`
 }
 
 func LoadConfig() (*Config, error) {

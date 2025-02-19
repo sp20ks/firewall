@@ -1,67 +1,37 @@
 package ratelimiter
 
 import (
-	"time"
+	"context"
+	"fmt"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/go-redis/redis_rate/v10"
+	"github.com/redis/go-redis/v9"
 )
 
-func NewRateLimiter(maxTokens, refillRate float64) *RateLimiter {
-	return &RateLimiter{
-		tokens:         maxTokens,
-		maxTokens:      maxTokens,
-		refillRate:     refillRate,
-		lastRefillTime: time.Now(),
-	}
+type IPRateLimiter struct {
+	limiter *redis_rate.Limiter
+	rdb     *redis.Client
 }
 
-func (r *RateLimiter) refillTokens() {
-	now := time.Now()
-	duration := now.Sub(r.lastRefillTime).Seconds()
-	tokensToAdd := duration * r.refillRate
-
-	r.tokens += tokensToAdd
-	if r.tokens > r.maxTokens {
-		r.tokens = r.maxTokens
-	}
-	r.lastRefillTime = now
-}
-
-func (r *RateLimiter) Allow() bool {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	r.refillTokens()
-
-	if r.tokens >= 1 {
-		r.tokens--
-		return true
-	}
-	return false
-}
-
-func NewIPRateLimiter(maxTokens, refillRate float64, redisAddr string) *IPRateLimiter {
+func NewIPRateLimiter(redisAddr string) *IPRateLimiter {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 	})
+	limiter := redis_rate.NewLimiter(rdb)
 
-	return &IPRateLimiter{
-		redisClient: rdb,
-		maxTokens:   maxTokens,
-		refillRate:  refillRate,
-	}
+	return &IPRateLimiter{rdb: rdb, limiter: limiter}
 }
 
-func (i *IPRateLimiter) GetLimiter(ip string) *RateLimiter {
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
+func (r *IPRateLimiter) Allow(clientIP string) error {
+	ctx := context.Background()
 
-	limiter, exists := i.limiters[ip]
-	if !exists {
-		limiter = NewRateLimiter(i.maxTokens, i.refillRate)
-		i.limiters[ip] = limiter
+	res, err := r.limiter.Allow(ctx, clientIP, redis_rate.PerMinute(10))
+	if err != nil {
+		return err
+	}
+	if res.Remaining == 0 {
+		return fmt.Errorf("rate limit exceeded")
 	}
 
-	return limiter
+	return nil
 }

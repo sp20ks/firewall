@@ -13,7 +13,7 @@ func main() {
 		log.Fatalf("Error loading config: %v", err)
 	}
 
-	ipRateLimiter := ratelimiter.NewIPRateLimiter(cfg.MaxTokens, cfg.RefillRate, cfg.RedisAddr)
+	ipRateLimiter := ratelimiter.NewIPRateLimiter(cfg.RedisAddr)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/rate_limit", ratelimiter.HandleCheckLimit(ipRateLimiter))
