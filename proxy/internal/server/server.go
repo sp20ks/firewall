@@ -78,7 +78,7 @@ func (s *Server) shutdown() error {
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Received request: method=%s, path=%s, remote=%s", r.Method, r.URL.Path, r.RemoteAddr)
+		log.Printf("Received request: method=%s, path=%s, remote=%s", r.Method, r.URL.Path, proxy.ReadUserIP(r))
 		next.ServeHTTP(w, r)
 	})
 }

@@ -3,6 +3,7 @@ package ratelimiter
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
@@ -13,18 +14,23 @@ type IPRateLimiter struct {
 	rdb     *redis.Client
 }
 
-func NewIPRateLimiter(redisAddr string) *IPRateLimiter {
+func NewIPRateLimiter(redisAddr string) (*IPRateLimiter, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 	})
-	limiter := redis_rate.NewLimiter(rdb)
 
-	return &IPRateLimiter{rdb: rdb, limiter: limiter}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+
+	limiter := redis_rate.NewLimiter(rdb)
+	return &IPRateLimiter{rdb: rdb, limiter: limiter}, nil
 }
 
-func (r *IPRateLimiter) Allow(clientIP string) error {
-	ctx := context.Background()
-
+func (r *IPRateLimiter) Allow(ctx context.Context, clientIP string) error {
 	res, err := r.limiter.Allow(ctx, clientIP, redis_rate.PerMinute(10))
 	if err != nil {
 		return err

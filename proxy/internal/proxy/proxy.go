@@ -79,7 +79,7 @@ func WriteJSONResponse(w http.ResponseWriter, data interface{}, status int) {
 }
 
 func (ph *ProxyHandler) validateRequest(r *http.Request) (code int, err error) {
-	ip := readUserIP(r)
+	ip := ReadUserIP(r)
 
 	if allowed, err := ph.rateLimiterClient.CheckLimit(ip); !allowed {
 		log.Printf("Rate limit error ip=%s: %v", ip, err)
@@ -89,7 +89,7 @@ func (ph *ProxyHandler) validateRequest(r *http.Request) (code int, err error) {
 	return http.StatusOK, nil
 }
 
-func readUserIP(r *http.Request) string {
+func ReadUserIP(r *http.Request) string {
 	IPAddress := r.Header.Get("X-Real-Ip")
 	if IPAddress == "" {
 		IPAddress = r.Header.Get("X-Forwarded-For")

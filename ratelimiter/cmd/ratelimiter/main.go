@@ -18,7 +18,11 @@ func main() {
 		log.Fatalf("Error loading config: %v", err)
 	}
 
-	ipRateLimiter := ratelimiter.NewIPRateLimiter(cfg.RedisAddr)
+	ipRateLimiter, err := ratelimiter.NewIPRateLimiter(cfg.RedisAddr)
+	if err != nil {
+		log.Fatalf("Error initializing rate limiter: %v", err)
+	}
+
 	defer func() {
 		if err := ipRateLimiter.Close(); err != nil {
 			log.Printf("Error closing Redis connection: %v", err)
@@ -34,9 +38,10 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Starting server on %s", cfg.Address)	
+		log.Printf("Starting server on %s", cfg.Address)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
+			os.Exit(1)
 		}
 	}()
 
