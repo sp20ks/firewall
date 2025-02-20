@@ -16,3 +16,5 @@ resources:
   - name: Server3
     endpoint: /server3
     host: "http://server3:80"
+
+ratelimiter_url: "http://ratelimiter:8081/rate_limit"

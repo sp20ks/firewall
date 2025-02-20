@@ -29,7 +29,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		}
 	}
 
-	proxyHandler, err := proxy.NewProxyHandler(proxyResources)
+	proxyHandler, err := proxy.NewProxyHandler(proxyResources, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy handler: %v", err)
 	}

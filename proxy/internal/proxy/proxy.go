@@ -78,7 +78,24 @@ func WriteJSONResponse(w http.ResponseWriter, data interface{}, status int) {
 	}
 }
 
-// unused func
-func validateRequest(r *http.Request) error {
-	return nil
+func (ph *ProxyHandler) validateRequest(r *http.Request) (code int, err error) {
+	ip := readUserIP(r)
+
+	if allowed, err := ph.rateLimiterClient.CheckLimit(ip); !allowed {
+		log.Printf("Rate limit error ip=%s: %v", ip, err)
+		return http.StatusTooManyRequests, fmt.Errorf("too many requests")
+	}
+
+	return http.StatusOK, nil
+}
+
+func readUserIP(r *http.Request) string {
+	IPAddress := r.Header.Get("X-Real-Ip")
+	if IPAddress == "" {
+		IPAddress = r.Header.Get("X-Forwarded-For")
+	}
+	if IPAddress == "" {
+		IPAddress = r.RemoteAddr
+	}
+	return IPAddress
 }

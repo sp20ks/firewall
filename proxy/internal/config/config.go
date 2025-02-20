@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	Env         string `yaml:"env" env:"ENV" env-required:"true"`
-	HTTPServer  `yaml:"http_server"`
-	IpsFilePath string     `env:"IPS_PATH"`
-	Resources   []resource `yaml:"resources"`
+	Env            string `yaml:"env" env:"ENV" env-required:"true"`
+	HTTPServer     `yaml:"http_server"`
+	IpsFilePath    string     `env:"IPS_PATH"`
+	Resources      []resource `yaml:"resources"`
+	RateLimiterURL string     `yaml:"ratelimiter_url"`
 }
 
 type HTTPServer struct {

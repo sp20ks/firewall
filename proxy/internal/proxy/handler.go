@@ -3,17 +3,21 @@ package proxy
 import (
 	"context"
 	"net/http"
+	"proxy/internal/config"
 	"time"
+
+	ratelimiterservice "proxy/internal/clients/ratelimiter_service"
 
 	"github.com/google/uuid"
 )
 
 type ProxyHandler struct {
-	configs   map[string]*Resource
-	transport http.RoundTripper
+	configs           map[string]*Resource
+	transport         http.RoundTripper
+	rateLimiterClient *ratelimiterservice.RateLimiterClient
 }
 
-func NewProxyHandler(resources []Resource) (*ProxyHandler, error) {
+func NewProxyHandler(resources []Resource, cfg *config.Config) (*ProxyHandler, error) {
 	configs, err := loadConfigs(resources)
 	if err != nil {
 		return nil, err
@@ -24,6 +28,7 @@ func NewProxyHandler(resources []Resource) (*ProxyHandler, error) {
 		transport: &http.Transport{
 			DisableKeepAlives: true,
 		},
+		rateLimiterClient: ratelimiterservice.NewRateLimiterClient(cfg.RateLimiterURL),
 	}, nil
 }
 
@@ -44,14 +49,14 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := validateRequest(r); err != nil {
+	if code, err := ph.validateRequest(r); err != nil {
 		errResp := ErrorResponse{
 			Error:      err.Error(),
-			StatusCode: http.StatusBadRequest,
+			StatusCode: code,
 			Timestamp:  time.Now().Format(time.RFC3339),
 			RequestID:  requestID,
 		}
-		WriteJSONResponse(w, errResp, http.StatusBadRequest)
+		WriteJSONResponse(w, errResp, code)
 		return
 	}
 
