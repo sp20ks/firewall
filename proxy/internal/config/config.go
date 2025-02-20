@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -12,8 +11,7 @@ import (
 type Config struct {
 	Env         string `yaml:"env" env:"ENV" env-required:"true"`
 	HTTPServer  `yaml:"http_server"`
-	IpsFilePath string `env:"IPS_PATH"`
-	AllowedIps  []string
+	IpsFilePath string     `env:"IPS_PATH"`
 	Resources   []resource `yaml:"resources"`
 }
 
@@ -47,12 +45,6 @@ func LoadConfig() (*Config, error) {
 	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
 		return nil, fmt.Errorf("cannot read config: %w", err)
 	}
-
-	data, err := os.ReadFile(cfg.IpsFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading IPs file: %w", err)
-	}
-	cfg.AllowedIps = strings.Split(string(data), "\n")
 
 	return &cfg, nil
 }

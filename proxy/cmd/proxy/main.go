@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
+	"log"
 	"proxy/internal/config"
 	"proxy/internal/server"
-	"log"
 )
 
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("Error loading allowed IPs: %v", err)
+		log.Fatalf("Error loading config: %v", err)
 	}
 
 	server, err := server.NewServer(cfg)
