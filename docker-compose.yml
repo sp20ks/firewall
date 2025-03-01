@@ -12,6 +12,7 @@ services:
       - firewall-network
     depends_on:
       - ratelimiter
+      # - cacher
 
   ratelimiter:
     build:
@@ -24,17 +25,44 @@ services:
       - .env
     networks:
       - firewall-network
-    
-  redis:
+    depends_on:
+      - redis-limiter
+
+  redis-limiter:
     image: redis:7-alpine
-    container_name: redis
+    container_name: redis-limiter
     restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
       - firewall-network
     volumes:
-      - redis_data:/data
+      - redis_limiter_data:/data
+
+  cache:
+    build:
+      context: ./cacher
+      dockerfile: Dockerfile
+    container_name: cacher
+    ports:
+      - "8082:8082"
+    env_file:
+      - .env
+    networks:
+      - firewall-network
+    depends_on:
+      - redis-cacher
+
+  redis-cacher:
+    image: redis:7-alpine
+    container_name: redis-cacher
+    restart: unless-stopped
+    ports:
+      - "6380:6380"
+    networks:
+      - firewall-network
+    volumes:
+      - redis_cacher_data:/data
 
   server1:
     image: kennethreitz/httpbin
@@ -65,4 +93,5 @@ networks:
     driver: bridge
 
 volumes:
-  redis_data:
+  redis_limiter_data:
+  redis_cacher_data:

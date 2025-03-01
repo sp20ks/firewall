@@ -1,0 +1,6 @@
+env: "local"
+cacher_server:
+  address: "0.0.0.0:8082"
+  timeout: 4s
+  idle_timeout: 60s
+  redis_address: "redis-cacher:6380"
