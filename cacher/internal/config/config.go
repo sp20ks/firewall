@@ -15,6 +15,7 @@ type Config struct {
 type CacherServer struct {
 	Address   string `yaml:"address" env-default:"localhost:8082"`
 	RedisAddr string `yaml:"redis_address"`
+	Ttl       int    `yaml:"cache_ttl"`
 }
 
 func LoadConfig() (*Config, error) {

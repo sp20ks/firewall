@@ -12,7 +12,7 @@ services:
       - firewall-network
     depends_on:
       - ratelimiter
-      # - cacher
+      - cacher
 
   ratelimiter:
     build:
@@ -39,7 +39,7 @@ services:
     volumes:
       - redis_limiter_data:/data
 
-  cache:
+  cacher:
     build:
       context: ./cacher
       dockerfile: Dockerfile
@@ -58,7 +58,7 @@ services:
     container_name: redis-cacher
     restart: unless-stopped
     ports:
-      - "6380:6380"
+      - "6380:6379"
     networks:
       - firewall-network
     volumes:

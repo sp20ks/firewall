@@ -14,6 +14,11 @@ logs-proxy:
 logs-ratelimiter:
 	docker-compose logs -f ratelimiter
 
+
+.PHONY: logs-cacher
+logs-cacher:
+	docker-compose logs -f cacher
+
 .PHONY: rebuild
 rebuild:
 	docker-compose up --build -d

@@ -10,9 +10,10 @@ import (
 
 type Cacher struct {
 	rdb *redis.Client
+	ttl time.Duration
 }
 
-func NewCacher(redisAddr string) (*Cacher, error) {
+func NewCacher(redisAddr string, ttl time.Duration) (*Cacher, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 	})
@@ -24,7 +25,7 @@ func NewCacher(redisAddr string) (*Cacher, error) {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 
-	return &Cacher{rdb: rdb}, nil
+	return &Cacher{rdb: rdb, ttl: ttl}, nil
 }
 
 func (c *Cacher) GetCache(key string) (*string, error) {
@@ -38,8 +39,8 @@ func (c *Cacher) GetCache(key string) (*string, error) {
 	return &val, nil
 }
 
-func (c *Cacher) SetCahce(key string) (string, error) {
-
+func (c *Cacher) SetCache(key, value string) error {
+	return c.rdb.Set(context.Background(), key, value, c.ttl).Err()
 }
 
 func (c *Cacher) Close() error {
