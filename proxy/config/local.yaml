@@ -18,3 +18,4 @@ resources:
     host: "http://server3:80"
 
 ratelimiter_url: "http://ratelimiter:8081/rate_limit"
+cacher_url: "http://cacher:8082/cache"

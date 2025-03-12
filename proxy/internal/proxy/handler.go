@@ -2,10 +2,13 @@ package proxy
 
 import (
 	"context"
+	"io"
+	"log"
 	"net/http"
 	"proxy/internal/config"
 	"time"
 
+	cacherservice "proxy/internal/clients/cacher_service"
 	ratelimiterservice "proxy/internal/clients/ratelimiter_service"
 
 	"github.com/google/uuid"
@@ -15,6 +18,7 @@ type ProxyHandler struct {
 	configs           map[string]*Resource
 	transport         http.RoundTripper
 	rateLimiterClient *ratelimiterservice.RateLimiterClient
+	cacherClient      *cacherservice.CacherClient
 }
 
 func NewProxyHandler(resources []Resource, cfg *config.Config) (*ProxyHandler, error) {
@@ -29,6 +33,7 @@ func NewProxyHandler(resources []Resource, cfg *config.Config) (*ProxyHandler, e
 			DisableKeepAlives: true,
 		},
 		rateLimiterClient: ratelimiterservice.NewRateLimiterClient(cfg.RateLimiterURL),
+		cacherClient:      cacherservice.NewCacherClient(cfg.CacherURL),
 	}, nil
 }
 
@@ -60,6 +65,17 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cacheKey, _ := ph.cacherClient.GenerateCacheKey(r)
+	cachedData, err := ph.cacherClient.GetCache(ctx, cacheKey)
+	if err == nil {
+		log.Printf("request with id=%s was cached", requestID)
+
+		w.Write([]byte(cachedData))
+		return
+	} else {
+		log.Printf("error while getting cache by key=%s: %v", cacheKey, err)
+	}
+
 	req, err := ph.modifyRequest(ctx, r, resource)
 	if err != nil {
 		errResp := ErrorResponse{
@@ -83,7 +99,21 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		WriteJSONResponse(w, errResp, http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(resp.Body)
 
-	copyResponse(w, resp)
+	// TODO: раскомментить и пофиксить когда-нибудь
+	// go func() {
+		err = ph.cacherClient.SetCache(ctx, cacheKey, string(respBody))
+		if err != nil {
+			log.Printf("failed to cache response: %v", err)
+		}
+	// }()
+
+	for k, v := range resp.Header {
+		w.Header()[k] = v
+	}
+
+	w.WriteHeader(resp.StatusCode)
+
+	w.Write(respBody)
 }

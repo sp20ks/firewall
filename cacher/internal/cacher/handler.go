@@ -23,9 +23,11 @@ func HandleGetCache(c *Cacher) http.HandlerFunc {
 		val, err := c.GetCache(key)
 		if err != nil {
 			log.Printf("Cache miss for key %s", key)
-			http.Error(w, "Cache miss", http.StatusBadRequest)
+			http.Error(w, "Cache miss", http.StatusNoContent)
 			return
 		}
+
+		log.Printf("successfully handle getting cache by key %s", key)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"key": key, "value": *val})
@@ -52,6 +54,8 @@ func HandleSetCache(c *Cacher) http.HandlerFunc {
 			http.Error(w, "Failed to set cache", http.StatusInternalServerError)
 			return
 		}
+
+		log.Printf("successfully handle setting cache by key %s", req.Key)
 
 		w.WriteHeader(http.StatusCreated)
 	}

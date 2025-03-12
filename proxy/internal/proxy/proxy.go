@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -49,19 +48,6 @@ func (ph *ProxyHandler) forwardRequest(ctx context.Context, req *http.Request) (
 	}
 
 	return resp, nil
-}
-
-func copyResponse(w http.ResponseWriter, resp *http.Response) {
-	for k, v := range resp.Header {
-		w.Header()[k] = v
-	}
-
-	w.WriteHeader(resp.StatusCode)
-
-	_, err := io.Copy(w, resp.Body)
-	if err != nil {
-		log.Printf("failed to copy response body: %v", err)
-	}
 }
 
 func WriteJSONResponse(w http.ResponseWriter, data interface{}, status int) {

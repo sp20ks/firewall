@@ -14,6 +14,7 @@ type Config struct {
 	IpsFilePath    string     `env:"IPS_PATH"`
 	Resources      []resource `yaml:"resources"`
 	RateLimiterURL string     `yaml:"ratelimiter_url"`
+	CacherURL      string     `yaml:"cacher_url"`
 }
 
 type HTTPServer struct {
