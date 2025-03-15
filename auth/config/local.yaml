@@ -5,3 +5,6 @@ auth_server:
   idle_timeout: 60s
   key_ttl: 60
   secret: "secret-key"
+auth_db:
+  password: "secret"
+  user: admin

@@ -1,15 +1,21 @@
 package main
 
 import (
-	"auth/internal/auth"
 	"auth/internal/config"
+	"auth/internal/delivery"
+	"auth/internal/repository/postgres"
+	"auth/internal/usecase"
 	"context"
+	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -18,10 +24,23 @@ func main() {
 		log.Fatalf("Error loading config: %v", err)
 	}
 
-	a := auth.NewAuth(cfg.SecretKey, time.Duration(cfg.KeyTTL))
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		cfg.AuthDB.Host, cfg.AuthDB.Port, cfg.AuthDB.User, cfg.AuthDB.Password, cfg.AuthDB.DBName, cfg.AuthDB.SSLMode)
+
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		log.Fatalf("failed to connect to db: %v", err)
+	}
+	defer db.Close()
+
+	userRepo := postgres.NewPostgresUserRepository(db)
+	authUseCase := usecase.NewAuthUseCase(userRepo, cfg.SecretKey, time.Duration(cfg.KeyTTL))
+	authHandler := delivery.NewAuthHandler(authUseCase)
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /auth", auth.HandleGetJwtToken(a))
-	mux.HandleFunc("GET /verify", auth.VerifyJwtToken(a))
+	mux.HandleFunc("POST /auth", authHandler.HandleGetJwtToken)
+	mux.HandleFunc("POST /register", authHandler.HandleRegisterUser)
+	mux.HandleFunc("GET /verify", authHandler.VerifyJwtToken)
 
 	srv := &http.Server{
 		Addr:    cfg.Address,
