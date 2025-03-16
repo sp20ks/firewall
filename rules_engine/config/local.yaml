@@ -1,0 +1,8 @@
+env: "local"
+rules_engine_server:
+  address: "0.0.0.0:8084"
+  timeout: 4s
+  idle_timeout: 60s
+rules_engine_db:
+  password: "secret"
+  user: admin

@@ -117,6 +117,35 @@ services:
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data
 
+  rules_engine:
+    build:
+      context: ./rules_engine
+      dockerfile: Dockerfile
+    container_name: rules-engine
+    ports:
+      - "8084:8084"
+    env_file:
+      - .env
+    networks:
+      - firewall-network
+    depends_on:
+      - postgres-rules-engine
+
+  postgres-rules-engine:
+    image: postgres:15-alpine
+    container_name: postgres-rules-engine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: postgres-rules-engine
+    ports:
+      - "5433:5433"
+    networks:
+      - firewall-network
+    volumes:
+      - postgres_rules_engine_data:/var/lib/postgresql/data
+
 networks:
   firewall-network:
     driver: bridge
@@ -125,3 +154,4 @@ volumes:
   redis_limiter_data:
   redis_cacher_data:
   postgres_auth_data:
+  postgres_rules_engine_data:

@@ -22,6 +22,10 @@ logs-cacher:
 logs-auth:
 	docker-compose logs -f auth
 
+.PHONY: logs-rules-engine
+logs-rules-engine:
+	docker-compose logs -f rules-engine
+
 .PHONY: rebuild
 rebuild:
 	docker-compose up --build -d

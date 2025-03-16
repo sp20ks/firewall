@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS resource_ip_list;
+DROP TABLE IF EXISTS ip_lists;
+DROP TABLE IF EXISTS resource_rule;
+DROP TABLE IF EXISTS rules;
+DROP TABLE IF EXISTS resources;
