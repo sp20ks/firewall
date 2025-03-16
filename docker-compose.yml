@@ -117,7 +117,7 @@ services:
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data
 
-  rules_engine:
+  rules-engine:
     build:
       context: ./rules_engine
       dockerfile: Dockerfile
@@ -140,7 +140,7 @@ services:
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: postgres-rules-engine
     ports:
-      - "5433:5433"
+      - "5433:5432"
     networks:
       - firewall-network
     volumes:

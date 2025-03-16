@@ -2,6 +2,9 @@ package main
 
 import (
 	"rules-engine/internal/config"
+	"rules-engine/internal/delivery"
+	"rules-engine/internal/repository/postgres"
+	"rules-engine/internal/usecase"
 
 	"context"
 	"database/sql"
@@ -31,18 +34,18 @@ func main() {
 	}
 	defer db.Close()
 
-	// userRepo := postgres.NewPostgresUserRepository(db)
-	// authUseCase := usecase.NewAuthUseCase(userRepo, cfg.SecretKey, time.Duration(cfg.KeyTTL))
-	// authHandler := delivery.NewAuthHandler(authUseCase)
+	resourceRepo := postgres.NewPostgresResourceRepository(db)
+	resourceUseCase := usecase.NewResorceUseCase(resourceRepo)
+	resourceHandler := delivery.NewResourceHandler(resourceUseCase)
 
-	// mux := http.NewServeMux()
-	// mux.HandleFunc("POST /auth", authHandler.HandleGetJwtToken)
-	// mux.HandleFunc("POST /register", authHandler.HandleRegisterUser)
-	// mux.HandleFunc("GET /verify", authHandler.VerifyJwtToken)
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /resources", resourceHandler.HandleCreateResource)
+	mux.HandleFunc("GET /resources", resourceHandler.HandleGetActiveResources)
+	mux.HandleFunc("PUT /resources/{id}", resourceHandler.HandleUpdateResource)
 
 	srv := &http.Server{
-		Addr: cfg.Address,
-		// Handler: mux,
+		Addr:    cfg.Address,
+		Handler: mux,
 	}
 
 	go func() {
