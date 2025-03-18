@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	rules "proxy/internal/clients/rules_engine_service"
 )
 
 type ErrorResponse struct {
@@ -16,7 +17,7 @@ type ErrorResponse struct {
 	RequestID  string `json:"request_id,omitempty"`
 }
 
-func (ph *ProxyHandler) modifyRequest(ctx context.Context, r *http.Request, resource *Resource) (*http.Request, error) {
+func (ph *ProxyHandler) modifyRequest(ctx context.Context, r *http.Request, resource rules.Resource) (*http.Request, error) {
 	url, err := url.Parse(resource.Host)
 	if err != nil {
 		return nil, err

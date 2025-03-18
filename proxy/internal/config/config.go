@@ -11,10 +11,10 @@ import (
 type Config struct {
 	Env            string `yaml:"env" env:"ENV" env-required:"true"`
 	HTTPServer     `yaml:"http_server"`
-	IpsFilePath    string     `env:"IPS_PATH"`
-	Resources      []resource `yaml:"resources"`
-	RateLimiterURL string     `yaml:"ratelimiter_url"`
-	CacherURL      string     `yaml:"cacher_url"`
+	IpsFilePath    string `env:"IPS_PATH"`
+	RateLimiterURL string `yaml:"ratelimiter_url"`
+	CacherURL      string `yaml:"cacher_url"`
+	RulesEngineURL string `yaml:"rules_engine_url"`
 }
 
 type HTTPServer struct {
@@ -23,12 +23,6 @@ type HTTPServer struct {
 	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
 	User        string        `yaml:"user" env-required:"true"`
 	Password    string        `yaml:"password" env-required:"true" env:"HTTP_SERVER_PASSWORD"`
-}
-
-type resource struct {
-	Name     string `yaml:"name"`
-	Endpoint string `yaml:"endpoint"`
-	Host     string `yaml:"host"`
 }
 
 func LoadConfig() (*Config, error) {

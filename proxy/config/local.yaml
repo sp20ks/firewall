@@ -6,16 +6,6 @@ http_server:
   user: "user"
   password: "password"
 
-resources:
-  - name: Server1
-    endpoint: /server1
-    host: "http://server1:80"
-  - name: Server2
-    endpoint: /server2
-    host: "http://server2:80"
-  - name: Server3
-    endpoint: /server3
-    host: "http://server3:80"
-
 ratelimiter_url: "http://ratelimiter:8081/rate_limit"
 cacher_url: "http://cacher:8082/cache"
+rules_engine_url: "http://rules-engine:8084/resources"

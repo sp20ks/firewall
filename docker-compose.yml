@@ -13,6 +13,7 @@ services:
     depends_on:
       - ratelimiter
       - cacher
+      - rules-engine
 
   ratelimiter:
     build:

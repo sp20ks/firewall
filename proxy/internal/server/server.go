@@ -21,15 +21,7 @@ type Server struct {
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
-	proxyResources := make([]proxy.Resource, len(cfg.Resources))
-	for i, r := range cfg.Resources {
-		proxyResources[i] = proxy.Resource{
-			Host:     r.Host,
-			Endpoint: r.Endpoint,
-		}
-	}
-
-	proxyHandler, err := proxy.NewProxyHandler(proxyResources, cfg)
+	proxyHandler, err := proxy.NewProxyHandler(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy handler: %v", err)
 	}

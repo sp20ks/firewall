@@ -2,38 +2,55 @@ package proxy
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"proxy/internal/config"
 	"time"
 
-	cacherservice "proxy/internal/clients/cacher_service"
-	ratelimiterservice "proxy/internal/clients/ratelimiter_service"
+	cacher "proxy/internal/clients/cacher_service"
+	ratelimiter "proxy/internal/clients/ratelimiter_service"
+	rules "proxy/internal/clients/rules_engine_service"
 
 	"github.com/google/uuid"
 )
 
+type ResourceMap map[string]map[string]rules.Resource
+
 type ProxyHandler struct {
-	configs           map[string]*Resource
+	resources         ResourceMap
 	transport         http.RoundTripper
-	rateLimiterClient *ratelimiterservice.RateLimiterClient
-	cacherClient      *cacherservice.CacherClient
+	rateLimiterClient *ratelimiter.RateLimiterClient
+	cacherClient      *cacher.CacherClient
+	rulesEngineClient *rules.RulesEngineClient
 }
 
-func NewProxyHandler(resources []Resource, cfg *config.Config) (*ProxyHandler, error) {
-	configs, err := loadConfigs(resources)
+func NewProxyHandler(cfg *config.Config) (*ProxyHandler, error) {
+	rulesClient := rules.NewRulesEngineClient(cfg.RulesEngineURL)
+
+	resources, err := rulesClient.GetResources()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load resources from rules engine: %w", err)
+	}
+
+	//TODO: доступные ресурсы должны обновляться постоянно, а не только при инициализации хэндлера, т.е. при деплое
+	resourcesMap := make(ResourceMap)
+	for _, res := range resources {
+		if _, exists := resourcesMap[res.URL]; !exists {
+			resourcesMap[res.URL] = make(map[string]rules.Resource)
+		}
+		resourcesMap[res.URL][res.Method] = res
 	}
 
 	return &ProxyHandler{
-		configs: configs,
+		resources: resourcesMap,
 		transport: &http.Transport{
 			DisableKeepAlives: true,
 		},
-		rateLimiterClient: ratelimiterservice.NewRateLimiterClient(cfg.RateLimiterURL),
-		cacherClient:      cacherservice.NewCacherClient(cfg.CacherURL),
+		rateLimiterClient: ratelimiter.NewRateLimiterClient(cfg.RateLimiterURL),
+		cacherClient:      cacher.NewCacherClient(cfg.CacherURL),
+		rulesEngineClient: rulesClient,
 	}, nil
 }
 
@@ -42,8 +59,8 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestID := uuid.NewString()
 	ctx = context.WithValue(ctx, "request-id", requestID)
 
-	resource, ok := ph.configs[r.URL.Path]
-	if !ok {
+	resourceMethods, pathExists := ph.resources[r.URL.Path]
+	if !pathExists {
 		errResp := ErrorResponse{
 			Error:      "endpoint not found",
 			StatusCode: http.StatusNotFound,
@@ -51,6 +68,18 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			RequestID:  requestID,
 		}
 		WriteJSONResponse(w, errResp, http.StatusNotFound)
+		return
+	}
+
+	resource, methodExists := resourceMethods[r.Method]
+	if !methodExists {
+		errResp := ErrorResponse{
+			Error:      "method not allowed",
+			StatusCode: http.StatusMethodNotAllowed,
+			Timestamp:  time.Now().Format(time.RFC3339),
+			RequestID:  requestID,
+		}
+		WriteJSONResponse(w, errResp, http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -103,10 +132,10 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: раскомментить и пофиксить когда-нибудь
 	// go func() {
-		err = ph.cacherClient.SetCache(ctx, cacheKey, string(respBody))
-		if err != nil {
-			log.Printf("failed to cache response: %v", err)
-		}
+	err = ph.cacherClient.SetCache(ctx, cacheKey, string(respBody))
+	if err != nil {
+		log.Printf("failed to cache response: %v", err)
+	}
 	// }()
 
 	for k, v := range resp.Header {
