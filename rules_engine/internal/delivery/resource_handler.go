@@ -20,7 +20,7 @@ type ResourceRequest struct {
 	HTTPMethod string `json:"http_method"`
 	URL        string `json:"url"`
 	CreatorID  string `json:"creator_id"`
-	IsActive   bool   `json:"is_active"`
+	IsActive   *bool  `json:"is_active"`
 }
 
 func (h *ResourceHandler) HandleCreateResource(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +59,7 @@ func (h *ResourceHandler) HandleUpdateResource(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if req.Name == "" && req.HTTPMethod == "" && req.URL == "" && !req.IsActive {
+	if req.Name == "" && req.HTTPMethod == "" && req.URL == "" && req.IsActive == nil {
 		http.Error(w, "At least one field must be provided for update", http.StatusBadRequest)
 		return
 	}

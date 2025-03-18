@@ -16,7 +16,7 @@ func NewResorceUseCase(repo repository.ResourceRepository) *ResorceUseCase {
 	return &ResorceUseCase{repo: repo}
 }
 
-func (r *ResorceUseCase) Create(name, method, url, creator_id string, is_active bool) error {
+func (r *ResorceUseCase) Create(name, method, url, creator_id string, is_active *bool) error {
 	resource := &entity.Resource{
 		Name:       name,
 		HTTPMethod: method,
@@ -28,7 +28,7 @@ func (r *ResorceUseCase) Create(name, method, url, creator_id string, is_active 
 	return r.repo.CreateResource(resource)
 }
 
-func (r *ResorceUseCase) Update(id, name, method, url string, is_active bool) error {
+func (r *ResorceUseCase) Update(id, name, method, url string, is_active *bool) error {
 	resource, err := r.repo.GetResource(id)
 	if err != nil {
 		return fmt.Errorf("error fetching resource: %w", err)
@@ -43,7 +43,7 @@ func (r *ResorceUseCase) Update(id, name, method, url string, is_active bool) er
 	if url != "" {
 		resource.URL = url
 	}
-	if is_active != resource.IsActive {
+	if is_active != nil {
 		resource.IsActive = is_active
 	}
 	return r.repo.UpdateResource(resource)

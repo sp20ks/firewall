@@ -19,7 +19,7 @@ type RulesEngineServer struct {
 
 type RulesEngineDB struct {
 	Host     string `yaml:"host" env-default:"postgres-rules-engine"`
-	Port     string `yaml:"port" env-default:"5433"`
+	Port     string `yaml:"port" env-default:"5432"`
 	User     string `yaml:"user" env-default:"admin"`
 	Password string `yaml:"password" env-required:"true"`
 	DBName   string `yaml:"dbname" env-default:"postgres-rules-engine"`

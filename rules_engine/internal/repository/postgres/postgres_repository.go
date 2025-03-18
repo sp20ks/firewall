@@ -8,6 +8,8 @@ import (
 	"rules-engine/internal/entity"
 
 	"rules-engine/internal/repository"
+
+	"github.com/google/uuid"
 )
 
 type PostgresResourceRepository struct {
@@ -19,7 +21,7 @@ func NewPostgresResourceRepository(db *sql.DB) repository.ResourceRepository {
 }
 
 func (r *PostgresResourceRepository) GetActiveResources() ([]entity.Resource, error) {
-	rows, err := r.db.Query("SELECT id, name, http_method, url, created_at, creator_id FROM resources WHERE is_active = TRUE")
+	rows, err := r.db.Query("SELECT id, name, http_method, url, is_active, created_at, creator_id FROM resources WHERE is_active = TRUE")
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +30,7 @@ func (r *PostgresResourceRepository) GetActiveResources() ([]entity.Resource, er
 	var resources []entity.Resource
 	for rows.Next() {
 		var res entity.Resource
-		if err := rows.Scan(&res.ID, &res.Name, &res.HTTPMethod, &res.URL, &res.CreatedAt, &res.CreatorID); err != nil {
+		if err := rows.Scan(&res.ID, &res.Name, &res.HTTPMethod, &res.URL, &res.IsActive, &res.CreatedAt, &res.CreatorID); err != nil {
 			return nil, err
 		}
 		resources = append(resources, res)
@@ -37,6 +39,7 @@ func (r *PostgresResourceRepository) GetActiveResources() ([]entity.Resource, er
 }
 
 func (r *PostgresResourceRepository) CreateResource(resource *entity.Resource) error {
+	resource.ID = uuid.New().String()
 	_, err := r.db.Exec("INSERT INTO resources (id, name, http_method, url, creator_id, is_active) VALUES ($1, $2, $3, $4, $5, $6)",
 		resource.ID, resource.Name, resource.HTTPMethod, resource.URL, resource.CreatorID, resource.IsActive)
 	return err
