@@ -21,15 +21,33 @@ type UserRequest struct {
 	Password string `json:"password"`
 }
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+type SuccessResponse struct {
+	Message string `json:"message"`
+}
+
+type TokenResponse struct {
+	Token string `json:"token"`
+}
+
+func sendJSONResponse(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}
+
 func (h *AuthHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req UserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		sendJSONResponse(w, http.StatusBadRequest, ErrorResponse{"Invalid request body"})
 		return
 	}
 
 	if req.Username == "" || req.Password == "" {
-		http.Error(w, "Both 'username' and 'password' must be provided", http.StatusBadRequest)
+		sendJSONResponse(w, http.StatusBadRequest, ErrorResponse{"Both 'username' and 'password' must be provided"})
 		return
 	}
 
@@ -37,50 +55,49 @@ func (h *AuthHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		// TODO: если юзер уже есть, то должна возвращаться читаемая ошибка, а не как сейчас.
 		log.Printf("Failed create user: %v", err)
-		http.Error(w, "Error while creating user", http.StatusBadRequest)
+		sendJSONResponse(w, http.StatusBadRequest, ErrorResponse{"Error while creating user"})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User is registered"))
+	sendJSONResponse(w, http.StatusOK, SuccessResponse{"User is registered"})
 }
 
 func (h *AuthHandler) HandleGetJwtToken(w http.ResponseWriter, r *http.Request) {
 	var req UserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		log.Printf("Failed parse body: %v", err)
+		sendJSONResponse(w, http.StatusBadRequest, ErrorResponse{"Invalid request body"})
 		return
 	}
 
 	if req.Username == "" || req.Password == "" {
-		http.Error(w, "Both 'username' and 'password' must be provided", http.StatusBadRequest)
+		sendJSONResponse(w, http.StatusBadRequest, ErrorResponse{"Both 'username' and 'password' must be provided"})
 		return
 	}
 
 	tokenString, err := h.authUseCase.Authenticate(req.Username, req.Password)
 	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		log.Printf("Failed to authenticate: %v", err)
+		sendJSONResponse(w, http.StatusUnauthorized, ErrorResponse{"Invalid credentials"})
 		return
 	}
 
-	response := map[string]string{"token": tokenString}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	sendJSONResponse(w, http.StatusOK, TokenResponse{tokenString})
 }
 
 func (h *AuthHandler) VerifyJwtToken(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		http.Error(w, "Missing 'token' parameter", http.StatusBadRequest)
+		sendJSONResponse(w, http.StatusBadRequest, ErrorResponse{"Missing 'token' parameter"})
 		return
 	}
 
-	err := h.authUseCase.VerifyToken(token)
+	user, err := h.authUseCase.GetUserByToken(token)
 	if err != nil {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		log.Printf("Failed verify token: %v", err)
+		sendJSONResponse(w, http.StatusUnauthorized, ErrorResponse{"Invalid token"})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Token is valid"))
+	sendJSONResponse(w, http.StatusOK, user)
 }

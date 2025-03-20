@@ -58,15 +58,25 @@ func (a *AuthUseCase) CreateToken(username string) (string, error) {
 	return tokenString, nil
 }
 
-func (a *AuthUseCase) VerifyToken(tokenString string) error {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+func (a *AuthUseCase) GetUserByToken(tokenString string) (*entity.User, error) {
+	claims := jwt.MapClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(a.secretKey), nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !token.Valid {
-		return fmt.Errorf("invalid token")
+		return nil, fmt.Errorf("invalid token")
 	}
-	return nil
+
+	if username, ok := claims["username"]; !ok {
+		return nil, fmt.Errorf("error while getting claims")
+	} else {
+		user, _ := a.repo.GetUser(username.(string))
+		if user == nil {
+			return nil, fmt.Errorf("user not found")
+		}
+		return user, nil
+	}
 }
