@@ -6,3 +6,5 @@ rules_engine_server:
 rules_engine_db:
   password: "secret"
   user: admin
+
+auth_url: "http://auth:8083/verify"

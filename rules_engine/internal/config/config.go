@@ -11,6 +11,7 @@ type Config struct {
 	Env               string `yaml:"env" env:"ENV" env-required:"true"`
 	RulesEngineServer `yaml:"rules_engine_server"`
 	RulesEngineDB     `yaml:"rules_engine_db"`
+	AuthURL           string `yaml:"auth_url"`
 }
 
 type RulesEngineServer struct {

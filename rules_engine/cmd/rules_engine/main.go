@@ -1,11 +1,6 @@
 package main
 
 import (
-	"rules-engine/internal/config"
-	"rules-engine/internal/delivery"
-	"rules-engine/internal/repository/postgres"
-	"rules-engine/internal/usecase"
-
 	"context"
 	"database/sql"
 	"fmt"
@@ -13,6 +8,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	authservice "rules-engine/internal/clients/auth_service"
+	"rules-engine/internal/config"
+	"rules-engine/internal/delivery"
+	"rules-engine/internal/delivery/middleware"
+	"rules-engine/internal/repository/postgres"
+	"rules-engine/internal/usecase"
 	"syscall"
 	"time"
 
@@ -38,10 +39,13 @@ func main() {
 	resourceUseCase := usecase.NewResorceUseCase(resourceRepo)
 	resourceHandler := delivery.NewResourceHandler(resourceUseCase)
 
+	authClient := authservice.NewAuthClient(cfg.AuthURL)
+	authMiddleware := middleware.AuthMiddleware(authClient)
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /resources", resourceHandler.HandleCreateResource)
+	mux.Handle("POST /resources", authMiddleware(http.HandlerFunc(resourceHandler.HandleCreateResource)))
+	mux.Handle("PUT /resources/{id}", authMiddleware(http.HandlerFunc(resourceHandler.HandleUpdateResource)))
 	mux.HandleFunc("GET /resources", resourceHandler.HandleGetActiveResources)
-	mux.HandleFunc("PUT /resources/{id}", resourceHandler.HandleUpdateResource)
 
 	srv := &http.Server{
 		Addr:    cfg.Address,
