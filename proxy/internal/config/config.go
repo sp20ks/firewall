@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	Env            string `yaml:"env" env:"ENV" env-required:"true"`
+	Env            string `env:"ENV"               env-required:"true" yaml:"env"`
 	HTTPServer     `yaml:"http_server"`
 	IpsFilePath    string `env:"IPS_PATH"`
 	RateLimiterURL string `yaml:"ratelimiter_url"`
@@ -18,11 +18,11 @@ type Config struct {
 }
 
 type HTTPServer struct {
-	Address     string        `yaml:"address" env-default:"localhost:8080"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
-	User        string        `yaml:"user" env-required:"true"`
-	Password    string        `yaml:"password" env-required:"true" env:"HTTP_SERVER_PASSWORD"`
+	Address     string        `env-default:"localhost:8080" yaml:"address"`
+	Timeout     time.Duration `env-default:"4s"             yaml:"timeout"`
+	IdleTimeout time.Duration `env-default:"60s"            yaml:"idle_timeout"`
+	User        string        `env-required:"true"          yaml:"user"`
+	Password    string        `env:"HTTP_SERVER_PASSWORD"   env-required:"true" yaml:"password"`
 }
 
 func LoadConfig() (*Config, error) {

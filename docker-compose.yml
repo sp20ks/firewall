@@ -88,7 +88,21 @@ services:
       - "9003:80"
     networks:
       - firewall-network
-  
+
+  golangci-lint:
+    image: golangci/golangci-lint:v1.55.2
+    container_name: golangci-lint
+    working_dir: /app
+    volumes:
+      - .:/app
+    networks:
+      - firewall-network
+    environment:
+      - GOTOOLCHAIN=auto
+      - CGO_ENABLED=0
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["/app/lint.sh"]
+
   auth:
     build:
       context: ./auth
@@ -146,7 +160,7 @@ services:
       - firewall-network
     volumes:
       - postgres_rules_engine_data:/var/lib/postgresql/data
-
+  
 networks:
   firewall-network:
     driver: bridge

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis_rate/v10"
-	"github.com/redis/go-redis/v9"
+	redis_rate "github.com/go-redis/redis_rate/v10"
+	redis "github.com/redis/go-redis/v9"
 )
 
 type IPRateLimiter struct {

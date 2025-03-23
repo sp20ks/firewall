@@ -1,0 +1,35 @@
+run:
+  skip-dirs:
+    - go/pkg/mod/
+  tests: true
+
+issues:
+  fix: true
+
+linters:
+  presets:
+    - bugs
+    - comment
+    - complexity
+    - error
+    - format
+    - import
+    - metalinter
+    - module
+    - performance
+    - sql
+    - style
+    - test
+    - unused
+  disable:
+    - gomoddirectives
+
+linters-settings:
+  tagalign:
+    align: true
+    sort: true
+
+  tagliatelle:
+    case:
+      rules:
+        json: snake

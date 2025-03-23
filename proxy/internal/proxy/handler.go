@@ -6,14 +6,13 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"proxy/internal/config"
 	"time"
 
+	"github.com/google/uuid"
 	cacher "proxy/internal/clients/cacher_service"
 	ratelimiter "proxy/internal/clients/ratelimiter_service"
 	rules "proxy/internal/clients/rules_engine_service"
-
-	"github.com/google/uuid"
+	"proxy/internal/config"
 )
 
 type ResourceMap map[string]map[string]rules.Resource
@@ -34,7 +33,7 @@ func NewProxyHandler(cfg *config.Config) (*ProxyHandler, error) {
 		return nil, fmt.Errorf("failed to load resources from rules engine: %w", err)
 	}
 
-	//TODO: доступные ресурсы должны обновляться постоянно, а не только при инициализации хэндлера, т.е. при деплое
+	// TODO: доступные ресурсы должны обновляться постоянно, а не только при инициализации хэндлера, т.е. при деплое
 	resourcesMap := make(ResourceMap)
 	for _, res := range resources {
 		if _, exists := resourcesMap[res.URL]; !exists {

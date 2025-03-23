@@ -27,7 +27,6 @@ func (r *PostgresUserRepository) GetUser(username string) (*entity.User, error) 
 	err := r.db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Password, &user.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}

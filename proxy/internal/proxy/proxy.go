@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+
 	rules "proxy/internal/clients/rules_engine_service"
 )
 

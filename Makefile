@@ -29,3 +29,7 @@ logs-rules-engine:
 .PHONY: rebuild
 rebuild:
 	docker-compose up --build -d
+
+.PHONY: lint
+lint:
+	docker-compose run --rm golangci-lint
