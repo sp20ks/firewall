@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-
 	"proxy/internal/config"
 	"proxy/internal/server"
 )
