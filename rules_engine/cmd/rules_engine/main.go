@@ -39,6 +39,10 @@ func main() {
 	resourceUseCase := usecase.NewResorceUseCase(resourceRepo)
 	resourceHandler := delivery.NewResourceHandler(resourceUseCase)
 
+	ipListRepo := postgres.NewPostgresIPListRepository(db)
+	ipListUseCase := usecase.NewIPListUseCase(ipListRepo)
+	ipListHandler := delivery.NewIPListHandler(ipListUseCase)
+
 	authClient := authservice.NewAuthClient(cfg.AuthURL)
 	authMiddleware := middleware.AuthMiddleware(authClient)
 
@@ -46,6 +50,9 @@ func main() {
 	mux.Handle("POST /resources", authMiddleware(http.HandlerFunc(resourceHandler.HandleCreateResource)))
 	mux.Handle("PUT /resources/{id}", authMiddleware(http.HandlerFunc(resourceHandler.HandleUpdateResource)))
 	mux.HandleFunc("GET /resources", resourceHandler.HandleGetActiveResources)
+	mux.Handle("POST /ip_lists", authMiddleware(http.HandlerFunc(ipListHandler.HandleCreateIPList)))
+	mux.Handle("PUT /ip_lists/{id}", authMiddleware(http.HandlerFunc(ipListHandler.HandleUpdateIPList)))
+	mux.HandleFunc("GET /ip_lists", ipListHandler.HandleGetIPLists)
 
 	srv := &http.Server{
 		Addr:    cfg.Address,
