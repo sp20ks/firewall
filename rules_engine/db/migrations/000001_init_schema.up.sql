@@ -28,10 +28,11 @@ CREATE TABLE resource_rule (
 
 CREATE TABLE ip_lists (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    ip CIDR NOT NULL UNIQUE,
+    ip CIDR NOT NULL,
     list_type TEXT NOT NULL CHECK (list_type IN ('whitelist', 'blacklist')),
     creator_id UUID NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (ip, list_type)
 );
 
 CREATE TABLE resource_ip_list (
