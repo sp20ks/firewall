@@ -35,6 +35,10 @@ func (r *ResorceUseCase) Update(id, name, method, url, host string, is_active *b
 		return fmt.Errorf("error fetching resource: %w", err)
 	}
 
+	if resource == nil {
+		return fmt.Errorf("resource with id=%s not found", id)
+	}
+
 	if name != "" {
 		resource.Name = name
 	}

@@ -2,12 +2,10 @@ package delivery
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"rules-engine/internal/entity"
 	"rules-engine/internal/usecase"
-	"strings"
 )
 
 type ResourceHandler struct {
@@ -105,18 +103,4 @@ func (h *ResourceHandler) HandleGetActiveResources(w http.ResponseWriter, r *htt
 		http.Error(w, "Error while encoding resources", http.StatusInternalServerError)
 		return
 	}
-}
-
-func extractToken(r *http.Request) (string, error) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return "", errors.New("missing Authorization header")
-	}
-
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		return "", errors.New("invalid Authorization header format")
-	}
-
-	return parts[1], nil
 }
