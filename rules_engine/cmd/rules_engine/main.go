@@ -37,8 +37,9 @@ func main() {
 
 	resourceRepo := postgres.NewPostgresResourceRepository(db)
 	ipListRepo := postgres.NewPostgresIPListRepository(db)
+	resourceIPListRepo := postgres.NewPostgresResourceIPListRepository(db)
 
-	resourceUseCase := usecase.NewResourceUseCase(resourceRepo, ipListRepo)
+	resourceUseCase := usecase.NewResourceUseCase(resourceRepo, ipListRepo, resourceIPListRepo)
 	ipListUseCase := usecase.NewIPListUseCase(ipListRepo)
 
 	resourceHandler := delivery.NewResourceHandler(resourceUseCase)
