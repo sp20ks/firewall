@@ -6,13 +6,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"proxy/internal/config"
 	"time"
 
-	"github.com/google/uuid"
 	cacher "proxy/internal/clients/cacher_service"
 	ratelimiter "proxy/internal/clients/ratelimiter_service"
 	rules "proxy/internal/clients/rules_engine_service"
-	"proxy/internal/config"
 )
 
 type ResourceMap map[string]map[string]rules.Resource

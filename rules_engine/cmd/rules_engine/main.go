@@ -36,11 +36,12 @@ func main() {
 	defer db.Close()
 
 	resourceRepo := postgres.NewPostgresResourceRepository(db)
-	resourceUseCase := usecase.NewResorceUseCase(resourceRepo)
-	resourceHandler := delivery.NewResourceHandler(resourceUseCase)
-
 	ipListRepo := postgres.NewPostgresIPListRepository(db)
+
+	resourceUseCase := usecase.NewResourceUseCase(resourceRepo, ipListRepo)
 	ipListUseCase := usecase.NewIPListUseCase(ipListRepo)
+
+	resourceHandler := delivery.NewResourceHandler(resourceUseCase)
 	ipListHandler := delivery.NewIPListHandler(ipListUseCase)
 
 	authClient := authservice.NewAuthClient(cfg.AuthURL)

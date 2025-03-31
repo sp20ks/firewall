@@ -2,21 +2,26 @@ package usecase
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"rules-engine/internal/entity"
 	"rules-engine/internal/repository"
 )
 
-type ResorceUseCase struct {
-	repo repository.ResourceRepository
+type ResourceUseCase struct {
+	resourceRepo repository.ResourceRepository
+	ipListRepo   repository.IPListRepository
 }
 
-func NewResorceUseCase(repo repository.ResourceRepository) *ResorceUseCase {
-	return &ResorceUseCase{repo: repo}
+func NewResourceUseCase(resourceRepo repository.ResourceRepository, ipListRepo repository.IPListRepository) *ResourceUseCase {
+	return &ResourceUseCase{
+		resourceRepo: resourceRepo,
+		ipListRepo:   ipListRepo,
+	}
 }
 
-func (r *ResorceUseCase) Create(name, method, url, host, creator_id string, is_active *bool) error {
+func (r *ResourceUseCase) Create(name, method, url, host, creator_id string, is_active *bool) error {
 	resource := &entity.Resource{
 		Name:       name,
 		HTTPMethod: method,
@@ -26,11 +31,11 @@ func (r *ResorceUseCase) Create(name, method, url, host, creator_id string, is_a
 		IsActive:   is_active,
 		CreatedAt:  time.Now(),
 	}
-	return r.repo.CreateResource(resource)
+	return r.resourceRepo.CreateResource(resource)
 }
 
-func (r *ResorceUseCase) Update(id, name, method, url, host string, is_active *bool) error {
-	resource, err := r.repo.GetResource(id)
+func (r *ResourceUseCase) Update(id, name, method, url, host string, is_active *bool) error {
+	resource, err := r.resourceRepo.GetResource(id)
 	if err != nil {
 		return fmt.Errorf("error fetching resource: %w", err)
 	}
@@ -54,9 +59,23 @@ func (r *ResorceUseCase) Update(id, name, method, url, host string, is_active *b
 	if is_active != nil {
 		resource.IsActive = is_active
 	}
-	return r.repo.UpdateResource(resource)
+	return r.resourceRepo.UpdateResource(resource)
 }
 
-func (r *ResorceUseCase) Get() ([]entity.Resource, error) {
-	return r.repo.GetActiveResources()
+func (r *ResourceUseCase) Get() ([]entity.Resource, error) {
+	resources, err := r.resourceRepo.GetActiveResources()
+	if err != nil {
+		return nil, err
+	}
+
+	for i, res := range resources {
+		ipLists, err := r.ipListRepo.GetIPListsForResource(res.ID)
+		if err != nil {
+			log.Println(err)
+			return nil, fmt.Errorf("failed to fetch IP lists for resource %s: %w", res.ID, err)
+		}
+		resources[i].IPLists = ipLists
+	}
+
+	return resources, nil
 }

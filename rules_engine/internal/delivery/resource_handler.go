@@ -9,10 +9,10 @@ import (
 )
 
 type ResourceHandler struct {
-	resourceUseCase *usecase.ResorceUseCase
+	resourceUseCase *usecase.ResourceUseCase
 }
 
-func NewResourceHandler(resourceUseCase *usecase.ResorceUseCase) *ResourceHandler {
+func NewResourceHandler(resourceUseCase *usecase.ResourceUseCase) *ResourceHandler {
 	return &ResourceHandler{resourceUseCase: resourceUseCase}
 }
 
@@ -84,7 +84,6 @@ func (h *ResourceHandler) HandleUpdateResource(w http.ResponseWriter, r *http.Re
 func (h *ResourceHandler) HandleGetActiveResources(w http.ResponseWriter, r *http.Request) {
 	resources, err := h.resourceUseCase.Get()
 	if err != nil {
-		log.Printf("Failed to get active resources: %v", err)
 		http.Error(w, "Error while fetching active resources", http.StatusInternalServerError)
 		return
 	}

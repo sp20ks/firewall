@@ -11,4 +11,5 @@ type Resource struct {
 	CreatorID  string    `json:"creator_id"`
 	IsActive   *bool     `json:"is_active"`
 	CreatedAt  time.Time `json:"created_at"`
+	IPLists    []IPList  `json:"ip_lists,omitempty"`
 }
