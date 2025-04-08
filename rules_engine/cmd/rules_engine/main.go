@@ -49,9 +49,12 @@ func main() {
 	authMiddleware := middleware.AuthMiddleware(authClient)
 
 	mux := http.NewServeMux()
-	mux.Handle("POST /resources", authMiddleware(http.HandlerFunc(resourceHandler.HandleCreateResource)))
-	mux.Handle("PUT /resources/{id}", authMiddleware(http.HandlerFunc(resourceHandler.HandleUpdateResource)))
 	mux.HandleFunc("GET /resources", resourceHandler.HandleGetActiveResources)
+	mux.Handle("POST /resources", authMiddleware(http.HandlerFunc(resourceHandler.HandleCreateResource)))
+	mux.Handle("POST /resources/{id}/attach", authMiddleware(http.HandlerFunc(resourceHandler.HandleAttachIPList)))
+	mux.Handle("POST /resources/{id}/detach", authMiddleware(http.HandlerFunc(resourceHandler.HandleDetachIPList)))
+	mux.Handle("PUT /resources/{id}", authMiddleware(http.HandlerFunc(resourceHandler.HandleUpdateResource)))
+
 	mux.Handle("POST /ip_lists", authMiddleware(http.HandlerFunc(ipListHandler.HandleCreateIPList)))
 	mux.Handle("PUT /ip_lists/{id}", authMiddleware(http.HandlerFunc(ipListHandler.HandleUpdateIPList)))
 	mux.HandleFunc("GET /ip_lists", ipListHandler.HandleGetIPLists)

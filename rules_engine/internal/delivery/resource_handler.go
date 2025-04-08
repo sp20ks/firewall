@@ -25,6 +25,10 @@ type ResourceRequest struct {
 	IsActive   *bool  `json:"is_active"`
 }
 
+type UpdateIPListReferenceRequest struct {
+	IPListID string `json:"ip_list_id"`
+}
+
 type ResourcesResponse struct {
 	Resources []entity.Resource `json:"resources"`
 }
@@ -103,3 +107,62 @@ func (h *ResourceHandler) HandleGetActiveResources(w http.ResponseWriter, r *htt
 		return
 	}
 }
+
+func (h *ResourceHandler) HandleAttachIPList(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "resource id must be provided", http.StatusBadRequest)
+		return
+	}
+
+	var req UpdateIPListReferenceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.IPListID == "" {
+		http.Error(w, "ip_list_id must be provided", http.StatusBadRequest)
+		return
+	}
+
+	err := h.resourceUseCase.AttachIPList(id, req.IPListID)
+	if err != nil {
+		log.Printf("Failed to attach IP list: %v", err)
+		http.Error(w, "Error while attaching IP list", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("IP list attached to resource"))
+}
+
+func (h *ResourceHandler) HandleDetachIPList(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "resource id must be provided", http.StatusBadRequest)
+		return
+	}
+
+	var req UpdateIPListReferenceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.IPListID == "" {
+		http.Error(w, "ip_list_id must be provided", http.StatusBadRequest)
+		return
+	}
+
+	err := h.resourceUseCase.DetachIPList(id, req.IPListID)
+	if err != nil {
+		log.Printf("Failed to detach IP list: %v", err)
+		http.Error(w, "Error while detaching IP list", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("IP list detached from resource"))
+}
+
