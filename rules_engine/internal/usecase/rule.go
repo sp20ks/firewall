@@ -56,3 +56,25 @@ func (r *RuleUseCase) Update(id, name, attackType, actionType string, isActive *
 	}
 	return r.repo.UpdateRule(rule)
 }
+
+func (r *RuleUseCase) getRuleByID(id string) (*entity.Rule, error) {
+	rule, err := r.repo.GetRule(id)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching rule: %w", err)
+	}
+
+	if rule == nil {
+		return nil, fmt.Errorf("rule not found: id=%s", id)
+	}
+
+	return rule, nil
+}
+
+func (r *RuleUseCase) GetRulesForResource(id string) ([]entity.Rule, error) {
+	rules, err := r.repo.GetRulesForResource(id)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching rules for resource %s: %w", id, err)
+	}
+
+	return rules, nil
+}

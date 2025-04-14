@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -10,27 +9,27 @@ import (
 	"rules-engine/internal/repository"
 )
 
-// Определяем ошибки для читаемости
-var (
-	ErrResourceNotFound = errors.New("resource not found")
-	ErrIPListNotFound   = errors.New("IP list not found")
-)
-
 type ResourceUseCase struct {
 	resourceRepo       repository.ResourceRepository
-	ipListRepo         repository.IPListRepository
+	iPListUseCase      *IPListUseCase
+	ruleUseCase        *RuleUseCase
 	resourceIPListRepo repository.ResourceIPListRepository
+	resourceRuleRepo   repository.ResourceRuleRepository
 }
 
 func NewResourceUseCase(
 	resourceRepo repository.ResourceRepository,
-	ipListRepo repository.IPListRepository,
+	iPListUseCase *IPListUseCase,
+	ruleUseCase *RuleUseCase,
 	resourceIPListRepo repository.ResourceIPListRepository,
+	resourceRuleRepo repository.ResourceRuleRepository,
 ) *ResourceUseCase {
 	return &ResourceUseCase{
 		resourceRepo:       resourceRepo,
-		ipListRepo:         ipListRepo,
+		iPListUseCase:      iPListUseCase,
+		ruleUseCase:        ruleUseCase,
 		resourceIPListRepo: resourceIPListRepo,
+		resourceRuleRepo:   resourceRuleRepo,
 	}
 }
 
@@ -40,20 +39,9 @@ func (r *ResourceUseCase) getResourceByID(id string) (*entity.Resource, error) {
 		return nil, fmt.Errorf("error fetching resource: %w", err)
 	}
 	if resource == nil {
-		return nil, fmt.Errorf("%w: id=%s", ErrResourceNotFound, id)
+		return nil, fmt.Errorf("resource not found: id=%s", id)
 	}
 	return resource, nil
-}
-
-func (r *ResourceUseCase) getIPListByID(id string) (*entity.IPList, error) {
-	list, err := r.ipListRepo.GetIPList(id)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching IP list: %w", err)
-	}
-	if list == nil {
-		return nil, fmt.Errorf("%w: id=%s", ErrIPListNotFound, id)
-	}
-	return list, nil
 }
 
 func (r *ResourceUseCase) Create(name, method, url, host, creatorID string, isActive *bool) error {
@@ -94,6 +82,7 @@ func (r *ResourceUseCase) Update(id, name, method, url, host string, isActive *b
 	return r.resourceRepo.UpdateResource(resource)
 }
 
+// TODO: добавить флаг, при котором отправляются вместе с ресурсами правила и списки
 func (r *ResourceUseCase) Get() ([]entity.Resource, error) {
 	resources, err := r.resourceRepo.GetActiveResources()
 	if err != nil {
@@ -101,12 +90,18 @@ func (r *ResourceUseCase) Get() ([]entity.Resource, error) {
 	}
 
 	for i, res := range resources {
-		ipLists, err := r.ipListRepo.GetIPListsForResource(res.ID)
+		ipLists, err := r.iPListUseCase.GetIPListsForResource(res.ID)
 		if err != nil {
 			log.Printf("error fetching IP lists for resource %s: %v", res.ID, err)
-			continue
+		} else {
+			resources[i].IPLists = ipLists
 		}
-		resources[i].IPLists = ipLists
+		rules, err := r.ruleUseCase.GetRulesForResource(res.ID)
+		if err != nil {
+			log.Printf("error fetching rules for resource %s: %v", res.ID, err)
+		} else {
+			resources[i].Rules = rules
+		}
 	}
 
 	return resources, nil
@@ -116,7 +111,7 @@ func (r *ResourceUseCase) AttachIPList(resourceID, ipListID string) error {
 	if _, err := r.getResourceByID(resourceID); err != nil {
 		return err
 	}
-	if _, err := r.getIPListByID(ipListID); err != nil {
+	if _, err := r.iPListUseCase.getIPListByID(ipListID); err != nil {
 		return err
 	}
 	return r.resourceIPListRepo.AttachIPList(resourceID, ipListID)
@@ -126,8 +121,28 @@ func (r *ResourceUseCase) DetachIPList(resourceID, ipListID string) error {
 	if _, err := r.getResourceByID(resourceID); err != nil {
 		return err
 	}
-	if _, err := r.getIPListByID(ipListID); err != nil {
+	if _, err := r.iPListUseCase.getIPListByID(ipListID); err != nil {
 		return err
 	}
 	return r.resourceIPListRepo.DetachIPList(resourceID, ipListID)
+}
+
+func (r *ResourceUseCase) AttachRule(resourceID, ruleID string) error {
+	if _, err := r.getResourceByID(resourceID); err != nil {
+		return err
+	}
+	if _, err := r.ruleUseCase.getRuleByID(ruleID); err != nil {
+		return err
+	}
+	return r.resourceRuleRepo.AttachRule(resourceID, ruleID)
+}
+
+func (r *ResourceUseCase) DetachRule(resourceID, ruleID string) error {
+	if _, err := r.getResourceByID(resourceID); err != nil {
+		return err
+	}
+	if _, err := r.ruleUseCase.getRuleByID(ruleID); err != nil {
+		return err
+	}
+	return r.resourceRuleRepo.DetachRule(resourceID, ruleID)
 }

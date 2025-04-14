@@ -7,4 +7,5 @@ type RuleRepository interface {
 	CreateRule(rule *entity.Rule) error
 	UpdateRule(rule *entity.Rule) error
 	GetRule(id string) (*entity.Rule, error)
+	GetRulesForResource(id string) ([]entity.Rule, error)
 }

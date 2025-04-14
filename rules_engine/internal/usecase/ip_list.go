@@ -58,3 +58,25 @@ func (i *IPListUseCase) Update(id, cidrStr, listType string) error {
 	}
 	return i.repo.UpdateIPList(list)
 }
+
+func (i *IPListUseCase) getIPListByID(id string) (*entity.IPList, error) {
+	list, err := i.repo.GetIPList(id)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching IP list: %w", err)
+	}
+
+	if list == nil {
+		return nil, fmt.Errorf("IP list not found: id=%s", id)
+	}
+
+	return list, nil
+}
+
+func (i *IPListUseCase) GetIPListsForResource(id string) ([]entity.IPList, error) {
+	ipLists, err := i.repo.GetIPListsForResource(id)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching IP lists for resource %s: %w", id, err)
+	}
+
+	return ipLists, nil
+}

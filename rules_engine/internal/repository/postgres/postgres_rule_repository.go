@@ -73,3 +73,33 @@ func (r *PostgresRuleRepository) GetRule(id string) (*entity.Rule, error) {
 	}
 	return rule, nil
 }
+
+func (r *PostgresRuleRepository) GetRulesForResource(resourceID string) ([]entity.Rule, error) {
+	query := `
+		SELECT t1.id, t1.name, t1.attack_type, t1.action_type, t1.is_active, t1.creator_id, t1.created_at
+		FROM rules AS t1
+		INNER JOIN resource_rule AS t2
+		ON t1.id = t2.rule_id
+		WHERE t2.resource_id = $1
+	`
+
+	rows, err := r.db.Query(query, resourceID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get rules: %w", err)
+	}
+	defer rows.Close()
+
+	var rules []entity.Rule
+	for rows.Next() {
+		var res entity.Rule
+		if err := rows.Scan(&res.ID, &res.Name, &res.AttackType, &res.ActionType, &res.IsActive, &res.CreatorID, &res.CreatedAt); err != nil {
+			return nil, err
+		}
+		rules = append(rules, res)
+	}
+
+	return rules, nil
+}

@@ -29,6 +29,10 @@ type UpdateIPListReferenceRequest struct {
 	IPListID string `json:"ip_list_id"`
 }
 
+type UpdateRuleReferenceRequest struct {
+	RuleID string `json:"rule_id"`
+}
+
 type ResourcesResponse struct {
 	Resources []entity.Resource `json:"resources"`
 }
@@ -166,3 +170,60 @@ func (h *ResourceHandler) HandleDetachIPList(w http.ResponseWriter, r *http.Requ
 	w.Write([]byte("IP list detached from resource"))
 }
 
+func (h *ResourceHandler) HandleAttachRule(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "resource id must be provided", http.StatusBadRequest)
+		return
+	}
+
+	var req UpdateRuleReferenceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.RuleID == "" {
+		http.Error(w, "rule_id must be provided", http.StatusBadRequest)
+		return
+	}
+
+	err := h.resourceUseCase.AttachRule(id, req.RuleID)
+	if err != nil {
+		log.Printf("Failed to attach rule: %v", err)
+		http.Error(w, "Error while attaching rule", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Rule attached to resource"))
+}
+
+func (h *ResourceHandler) HandleDetachRule(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "resource id must be provided", http.StatusBadRequest)
+		return
+	}
+
+	var req UpdateRuleReferenceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.RuleID == "" {
+		http.Error(w, "rule_id must be provided", http.StatusBadRequest)
+		return
+	}
+
+	err := h.resourceUseCase.DetachRule(id, req.RuleID)
+	if err != nil {
+		log.Printf("Failed to detach rule: %v", err)
+		http.Error(w, "Error while detaching rule", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Rule detached from resource"))
+}

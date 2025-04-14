@@ -38,11 +38,12 @@ func main() {
 	resourceRepo := postgres.NewPostgresResourceRepository(db)
 	ipListRepo := postgres.NewPostgresIPListRepository(db)
 	resourceIPListRepo := postgres.NewPostgresResourceIPListRepository(db)
+	resourceRuleRepo := postgres.NewPostgresResourceRuleRepository(db)
 	ruleRepo := postgres.NewPostgresRuleRepository(db)
 
-	resourceUseCase := usecase.NewResourceUseCase(resourceRepo, ipListRepo, resourceIPListRepo)
 	ipListUseCase := usecase.NewIPListUseCase(ipListRepo)
 	ruleUseCase := usecase.NewRuleUseCase(ruleRepo)
+	resourceUseCase := usecase.NewResourceUseCase(resourceRepo, ipListUseCase, ruleUseCase, resourceIPListRepo, resourceRuleRepo)
 
 	resourceHandler := delivery.NewResourceHandler(resourceUseCase)
 	ipListHandler := delivery.NewIPListHandler(ipListUseCase)
@@ -54,8 +55,10 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /resources", resourceHandler.HandleGetActiveResources)
 	mux.Handle("POST /resources", authMiddleware(http.HandlerFunc(resourceHandler.HandleCreateResource)))
-	mux.Handle("POST /resources/{id}/attach", authMiddleware(http.HandlerFunc(resourceHandler.HandleAttachIPList)))
-	mux.Handle("POST /resources/{id}/detach", authMiddleware(http.HandlerFunc(resourceHandler.HandleDetachIPList)))
+	mux.Handle("POST /resources/{id}/attach_ip_list", authMiddleware(http.HandlerFunc(resourceHandler.HandleAttachIPList)))
+	mux.Handle("POST /resources/{id}/detach_ip_list", authMiddleware(http.HandlerFunc(resourceHandler.HandleDetachIPList)))
+	mux.Handle("POST /resources/{id}/attach_rule", authMiddleware(http.HandlerFunc(resourceHandler.HandleAttachRule)))
+	mux.Handle("POST /resources/{id}/detach_rule", authMiddleware(http.HandlerFunc(resourceHandler.HandleDetachRule)))
 	mux.Handle("PUT /resources/{id}", authMiddleware(http.HandlerFunc(resourceHandler.HandleUpdateResource)))
 
 	mux.Handle("POST /ip_lists", authMiddleware(http.HandlerFunc(ipListHandler.HandleCreateIPList)))
