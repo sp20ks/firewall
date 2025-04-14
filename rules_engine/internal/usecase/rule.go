@@ -57,7 +57,7 @@ func (r *RuleUseCase) Update(id, name, attackType, actionType string, isActive *
 	return r.repo.UpdateRule(rule)
 }
 
-func (r *RuleUseCase) getRuleByID(id string) (*entity.Rule, error) {
+func (r *RuleUseCase) GetRuleByID(id string) (*entity.Rule, error) {
 	rule, err := r.repo.GetRule(id)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching rule: %w", err)

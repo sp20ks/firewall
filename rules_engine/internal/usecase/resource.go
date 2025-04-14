@@ -33,7 +33,7 @@ func NewResourceUseCase(
 	}
 }
 
-func (r *ResourceUseCase) getResourceByID(id string) (*entity.Resource, error) {
+func (r *ResourceUseCase) GetResourceByID(id string) (*entity.Resource, error) {
 	resource, err := r.resourceRepo.GetResource(id)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching resource: %w", err)
@@ -58,7 +58,7 @@ func (r *ResourceUseCase) Create(name, method, url, host, creatorID string, isAc
 }
 
 func (r *ResourceUseCase) Update(id, name, method, url, host string, isActive *bool) error {
-	resource, err := r.getResourceByID(id)
+	resource, err := r.GetResourceByID(id)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (r *ResourceUseCase) Get() ([]entity.Resource, error) {
 }
 
 func (r *ResourceUseCase) AttachIPList(resourceID, ipListID string) error {
-	if _, err := r.getResourceByID(resourceID); err != nil {
+	if _, err := r.GetResourceByID(resourceID); err != nil {
 		return err
 	}
 	if _, err := r.iPListUseCase.getIPListByID(ipListID); err != nil {
@@ -118,7 +118,7 @@ func (r *ResourceUseCase) AttachIPList(resourceID, ipListID string) error {
 }
 
 func (r *ResourceUseCase) DetachIPList(resourceID, ipListID string) error {
-	if _, err := r.getResourceByID(resourceID); err != nil {
+	if _, err := r.GetResourceByID(resourceID); err != nil {
 		return err
 	}
 	if _, err := r.iPListUseCase.getIPListByID(ipListID); err != nil {
@@ -128,20 +128,20 @@ func (r *ResourceUseCase) DetachIPList(resourceID, ipListID string) error {
 }
 
 func (r *ResourceUseCase) AttachRule(resourceID, ruleID string) error {
-	if _, err := r.getResourceByID(resourceID); err != nil {
+	if _, err := r.GetResourceByID(resourceID); err != nil {
 		return err
 	}
-	if _, err := r.ruleUseCase.getRuleByID(ruleID); err != nil {
+	if _, err := r.ruleUseCase.GetRuleByID(ruleID); err != nil {
 		return err
 	}
 	return r.resourceRuleRepo.AttachRule(resourceID, ruleID)
 }
 
 func (r *ResourceUseCase) DetachRule(resourceID, ruleID string) error {
-	if _, err := r.getResourceByID(resourceID); err != nil {
+	if _, err := r.GetResourceByID(resourceID); err != nil {
 		return err
 	}
-	if _, err := r.ruleUseCase.getRuleByID(ruleID); err != nil {
+	if _, err := r.ruleUseCase.GetRuleByID(ruleID); err != nil {
 		return err
 	}
 	return r.resourceRuleRepo.DetachRule(resourceID, ruleID)
