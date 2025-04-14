@@ -41,7 +41,7 @@ func (r *PostgresRuleRepository) GetActiveRules() ([]entity.Rule, error) {
 func (r *PostgresRuleRepository) CreateRule(rule *entity.Rule) error {
 	rule.ID = uuid.New().String()
 	_, err := r.db.Exec("INSERT INTO rules (id, name, attack_type, action_type, creator_id, is_active) VALUES ($1, $2, $3, $4, $5, $6)",
-		rule.ID, rule.Name, rule.AttackType, rule.ActionType, rule.IsActive, rule.CreatorID)
+		rule.ID, rule.Name, rule.AttackType, rule.ActionType, rule.CreatorID, rule.IsActive)
 	return err
 }
 

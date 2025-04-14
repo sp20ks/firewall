@@ -38,12 +38,15 @@ func main() {
 	resourceRepo := postgres.NewPostgresResourceRepository(db)
 	ipListRepo := postgres.NewPostgresIPListRepository(db)
 	resourceIPListRepo := postgres.NewPostgresResourceIPListRepository(db)
+	ruleRepo := postgres.NewPostgresRuleRepository(db)
 
 	resourceUseCase := usecase.NewResourceUseCase(resourceRepo, ipListRepo, resourceIPListRepo)
 	ipListUseCase := usecase.NewIPListUseCase(ipListRepo)
+	ruleUseCase := usecase.NewRuleUseCase(ruleRepo)
 
 	resourceHandler := delivery.NewResourceHandler(resourceUseCase)
 	ipListHandler := delivery.NewIPListHandler(ipListUseCase)
+	ruleHandler := delivery.NewRuleHandler(ruleUseCase)
 
 	authClient := authservice.NewAuthClient(cfg.AuthURL)
 	authMiddleware := middleware.AuthMiddleware(authClient)
@@ -58,6 +61,10 @@ func main() {
 	mux.Handle("POST /ip_lists", authMiddleware(http.HandlerFunc(ipListHandler.HandleCreateIPList)))
 	mux.Handle("PUT /ip_lists/{id}", authMiddleware(http.HandlerFunc(ipListHandler.HandleUpdateIPList)))
 	mux.HandleFunc("GET /ip_lists", ipListHandler.HandleGetIPLists)
+
+	mux.Handle("POST /rules", authMiddleware(http.HandlerFunc(ruleHandler.HandleCreateRule)))
+	mux.Handle("PUT /rules/{id}", authMiddleware(http.HandlerFunc(ruleHandler.HandleUpdateRule)))
+	mux.HandleFunc("GET /rules", ruleHandler.HandleGetRules)
 
 	srv := &http.Server{
 		Addr:    cfg.Address,
