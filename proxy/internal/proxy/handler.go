@@ -6,12 +6,12 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"proxy/internal/config"
 	"time"
 
 	cacher "proxy/internal/clients/cacher_service"
 	ratelimiter "proxy/internal/clients/ratelimiter_service"
 	rules "proxy/internal/clients/rules_engine_service"
+	"proxy/internal/config"
 
 	"github.com/google/uuid"
 )

@@ -23,7 +23,7 @@ func (r *RuleUseCase) Create(name, attackType, actionType, creatorID string, isA
 	rule := &entity.Rule{
 		Name:       name,
 		AttackType: attackType,
-		ActionType: actionType,
+		ActionType: entity.Action(actionType),
 		CreatorID:  creatorID,
 		IsActive:   isActive,
 		CreatedAt:  time.Now(),
@@ -49,7 +49,7 @@ func (r *RuleUseCase) Update(id, name, attackType, actionType string, isActive *
 		rule.AttackType = attackType
 	}
 	if actionType != "" {
-		rule.ActionType = actionType
+		rule.ActionType = entity.Action(actionType)
 	}
 	if isActive != nil {
 		rule.IsActive = isActive
