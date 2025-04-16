@@ -1,6 +1,7 @@
 package rulesengineservice
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,6 +21,21 @@ type ResourcesResponse struct {
 
 type RulesEngineClient struct {
 	rulesEngineURL string
+}
+
+type AnalizerRequest struct {
+	IP      string            `json:"ip"`
+	Method  string            `json:"method"`
+	URL     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
+	Body    string            `json:"body"`
+}
+
+type AnalizerResponse struct {
+	Action       string `json:"action"`
+	ModifiedURL  string `json:"modified_url,omitempty"`
+	ModifiedBody string `json:"modified_body,omitempty"`
+	Reason       string `json:"reason"`
 }
 
 func NewRulesEngineClient(url string) *RulesEngineClient {
@@ -46,4 +62,31 @@ func (re *RulesEngineClient) GetResources() ([]Resource, error) {
 	}
 
 	return resourcesResp.Resources, nil
+}
+
+func (re *RulesEngineClient) AnalizeRequest(ip, method, url, body string, headers map[string]string) (*AnalizerResponse, error) {
+	respBody, err := json.Marshal(AnalizerRequest{IP: ip, Method: method, URL: url, Body: body, Headers: headers})
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequest(http.MethodGet, re.rulesEngineURL, bytes.NewBuffer(respBody))
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	client := &http.Client{Timeout: 2 * time.Second}
+
+	resp, err := client.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("error check request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var analizerResp AnalizerResponse
+	if err := json.NewDecoder(resp.Body).Decode(&analizerResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &analizerResp, nil
 }

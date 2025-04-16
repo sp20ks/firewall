@@ -16,6 +16,7 @@ func NewAnalizerUseCase(ruleRepo repository.RuleRepository) *AnalizerUseCase {
 	return &AnalizerUseCase{ruleRepo: ruleRepo}
 }
 
+// TODO: добавить ip листы сюда
 func (a *AnalizerUseCase) AnalyzeRequest(request *entity.Request) (*entity.ScanResult, error) {
 	rules, err := a.ruleRepo.GetRulesByURL(extractPath(request.URL), request.Method)
 	if err != nil {
