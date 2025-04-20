@@ -1,9 +1,11 @@
 package proxy
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -66,12 +68,51 @@ func WriteJSONResponse(w http.ResponseWriter, data interface{}, status int) {
 	}
 }
 
-func (ph *ProxyHandler) validateRequest(r *http.Request) (code int, err error) {
+func (ph *ProxyHandler) validateRequest(r *http.Request) (int, error) {
 	ip := ReadUserIP(r)
 
 	if allowed, err := ph.rateLimiterClient.CheckLimit(ip); !allowed {
 		log.Printf("Rate limit error ip=%s: %v", ip, err)
 		return http.StatusTooManyRequests, fmt.Errorf("too many requests")
+	}
+
+	var bodyBytes []byte
+	if r.Body != nil {
+		bodyBytes, _ = io.ReadAll(r.Body)
+	}
+
+	headers := make(map[string]string)
+	for k, v := range r.Header {
+		if len(v) > 0 {
+			headers[k] = v[0]
+		}
+	}
+	analysisResp, err := ph.rulesEngineClient.AnalizeRequest(
+		ip,
+		r.Method,
+		r.URL.String(),
+		string(bodyBytes),
+		headers,
+	)
+	if err != nil {
+		log.Printf("Error analyzing request: %v", err)
+		return http.StatusInternalServerError, fmt.Errorf("error analyzing request")
+	}
+
+	switch analysisResp.Action {
+	case "block":
+		log.Printf("Blocked request from %s: %s", ip, analysisResp.Reason)
+		return http.StatusForbidden, fmt.Errorf("request blocked: %s", analysisResp.Reason)
+	case "escape", "sanitize":
+		if analysisResp.ModifiedBody != "" {
+			r.Body = io.NopCloser(bytes.NewBufferString(analysisResp.ModifiedBody))
+		}
+		if analysisResp.ModifiedURL != "" {
+			modifiedURL, err := url.Parse(analysisResp.ModifiedURL)
+			if err == nil {
+				r.URL = modifiedURL
+			}
+		}
 	}
 
 	return http.StatusOK, nil

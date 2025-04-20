@@ -43,7 +43,7 @@ func NewRulesEngineClient(url string) *RulesEngineClient {
 }
 
 func (re *RulesEngineClient) GetResources() ([]Resource, error) {
-	request, err := http.NewRequest(http.MethodGet, re.rulesEngineURL, nil)
+	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/resources", re.rulesEngineURL), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -70,19 +70,17 @@ func (re *RulesEngineClient) AnalizeRequest(ip, method, url, body string, header
 		return nil, err
 	}
 
-	request, err := http.NewRequest(http.MethodGet, re.rulesEngineURL, bytes.NewBuffer(respBody))
+	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/analize", re.rulesEngineURL), bytes.NewBuffer(respBody))
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
 	client := &http.Client{Timeout: 2 * time.Second}
-
 	resp, err := client.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("error check request: %w", err)
 	}
 	defer resp.Body.Close()
-
 	var analizerResp AnalizerResponse
 	if err := json.NewDecoder(resp.Body).Decode(&analizerResp); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)

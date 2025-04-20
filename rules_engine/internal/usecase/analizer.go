@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"fmt"
+	"net/url"
 	"regexp"
 	"rules-engine/internal/entity"
 	"rules-engine/internal/repository"
@@ -20,7 +20,11 @@ func NewAnalizerUseCase(ruleRepo repository.RuleRepository) *AnalizerUseCase {
 func (a *AnalizerUseCase) AnalyzeRequest(request *entity.Request) (*entity.ScanResult, error) {
 	rules, err := a.ruleRepo.GetRulesByURL(extractPath(request.URL), request.Method)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching rules for resource %s %s: %w", request.Method, extractPath(request.URL), err)
+	}
+
+	result := &entity.ScanResult{
+		Action: entity.ActionAllow,
+		Reason: "Request passed all checks.",
 	}
 
 	for _, rule := range rules {
@@ -28,34 +32,34 @@ func (a *AnalizerUseCase) AnalyzeRequest(request *entity.Request) (*entity.ScanR
 			continue
 		}
 
-		var result *entity.ScanResult
+		var tempResult *entity.ScanResult
 		switch rule.AttackType {
 		case "xss":
-			result = a.applyXSSRule(request, &rule)
+			tempResult = a.applyXSSRule(request, &rule)
 		case "csrf":
-			result = a.applyCSRFRule(request, &rule)
+			tempResult = a.applyCSRFRule(request, &rule)
 		case "sqli":
-			result = a.applySQLIRule(request, &rule)
+			tempResult = a.applySQLIRule(request, &rule)
 		default:
 			continue
 		}
 
-		if result != nil {
-			return result, nil
+		if tempResult != nil && tempResult.Action == "block" {
+			return tempResult, nil
+		}
+
+		if tempResult != nil {
+			result = tempResult
 		}
 	}
 
-	return &entity.ScanResult{
-		Action: entity.ActionAllow,
-		Reason: "Request passed all checks.",
-	}, nil
+	return result, nil
 }
 
 func (a *AnalizerUseCase) applyXSSRule(request *entity.Request, rule *entity.Rule) *entity.ScanResult {
 	xssDetected := false
 	modifiedBody := request.Body
 	modifiedURL := request.URL
-
 	if matched, _ := regexp.MatchString("(?i)<script.*?>.*?</script>", request.Body); matched {
 		xssDetected = true
 		switch rule.ActionType {
@@ -66,13 +70,14 @@ func (a *AnalizerUseCase) applyXSSRule(request *entity.Request, rule *entity.Rul
 		}
 	}
 
-	if matched, _ := regexp.MatchString("(?i)<script.*?>.*?</script>", request.URL); matched {
+	decodedURL := decodeURL(request.URL)
+	if matched, _ := regexp.MatchString("(?i)<script.*?>.*?</script>", decodedURL); matched {
 		xssDetected = true
 		switch rule.ActionType {
 		case entity.ActionSanitize:
-			modifiedURL = sanitizeXSS(request.URL)
+			modifiedURL = sanitizeXSS(decodedURL)
 		case entity.ActionEscape:
-			modifiedURL = escapeHTML(request.URL)
+			modifiedURL = escapeHTML(decodedURL)
 		}
 	}
 
@@ -183,4 +188,12 @@ func extractPath(fullURL string) string {
 	}
 
 	return fullURL
+}
+
+func decodeURL(raw string) string {
+	decoded, err := url.QueryUnescape(raw)
+	if err != nil {
+		return raw
+	}
+	return decoded
 }

@@ -18,8 +18,8 @@ func NewAnalizerHandler(analizer *usecase.AnalizerUseCase) *AnalizerHandler {
 
 func (h *AnalizerHandler) HandleAnalizeRequest(w http.ResponseWriter, r *http.Request) {
 	var req entity.Request
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Failed parse body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}

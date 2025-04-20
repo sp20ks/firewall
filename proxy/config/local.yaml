@@ -8,4 +8,4 @@ http_server:
 
 ratelimiter_url: "http://ratelimiter:8081/rate_limit"
 cacher_url: "http://cacher:8082/cache"
-rules_engine_url: "http://rules-engine:8084/resources"
+rules_engine_url: "http://rules-engine:8084"

@@ -6,14 +6,13 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"proxy/internal/config"
 	"time"
 
+	"github.com/google/uuid"
 	cacher "proxy/internal/clients/cacher_service"
 	ratelimiter "proxy/internal/clients/ratelimiter_service"
 	rules "proxy/internal/clients/rules_engine_service"
-	"proxy/internal/config"
-
-	"github.com/google/uuid"
 )
 
 type ResourceMap map[string]map[string]rules.Resource
@@ -93,7 +92,6 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		WriteJSONResponse(w, errResp, code)
 		return
 	}
-
 	cacheKey, _ := ph.cacherClient.GenerateCacheKey(r)
 	cachedData, err := ph.cacherClient.GetCache(ctx, cacheKey)
 	if err == nil {
