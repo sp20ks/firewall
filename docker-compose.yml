@@ -67,25 +67,30 @@ services:
 
   server1:
     image: kennethreitz/httpbin
+    # build:
+      # context: ./listener
     container_name: server1
     ports:
       - "9001:80"
+      # - "9001:4567"
     networks:
       - firewall-network
 
   server2:
-    image: kennethreitz/httpbin
+    build:
+      context: ./listener
     container_name: server2
     ports:
-      - "9002:80"
+      - "9002:4567"
     networks:
       - firewall-network
 
   server3:
-    image: kennethreitz/httpbin
+    build:
+      context: ./listener
     container_name: server3
     ports:
-      - "9003:80"
+      - "9003:4567"
     networks:
       - firewall-network
 

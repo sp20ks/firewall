@@ -6,12 +6,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"proxy/internal/config"
 	"time"
 
 	cacher "proxy/internal/clients/cacher_service"
 	ratelimiter "proxy/internal/clients/ratelimiter_service"
 	rules "proxy/internal/clients/rules_engine_service"
-	"proxy/internal/config"
 
 	"github.com/google/uuid"
 )
@@ -118,6 +118,8 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := ph.forwardRequest(ctx, req)
 	if err != nil {
+		log.Printf("error while proxing request: %v", err)
+
 		errResp := ErrorResponse{
 			Error:      "proxy error",
 			StatusCode: http.StatusInternalServerError,
