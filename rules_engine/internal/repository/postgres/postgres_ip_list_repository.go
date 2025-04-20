@@ -128,3 +128,43 @@ func (r *PostgresIPListRepository) GetIPListsForResource(resourceID string) ([]e
 	}
 	return lists, nil
 }
+
+func (r *PostgresIPListRepository) GetIPListsByURL(url, method string) ([]entity.IPList, error) {
+	query := `
+		SELECT t1.id, t1.ip, t1.list_type, t1.creator_id, t1.created_at
+		FROM ip_lists AS t1
+		INNER JOIN resource_ip_list AS t2
+		ON t1.id = t2.ip_list_id
+		INNER JOIN resources AS t3
+		ON t2.resource_id = t3.id
+		WHERE t3.url = $1 AND t3.http_method = $2
+	`
+
+	rows, err := r.db.Query(query, url, method)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get IP lists: %w", err)
+	}
+	defer rows.Close()
+
+	var lists []entity.IPList
+	for rows.Next() {
+		var res entity.IPList
+		var cidrStr string
+		if err := rows.Scan(&res.ID, &cidrStr, &res.ListType, &res.CreatorID, &res.CreatedAt); err != nil {
+			return nil, err
+		}
+
+		ip, ipNet, err := net.ParseCIDR(cidrStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse CIDR: %w", err)
+		}
+		ipNet.IP = ip
+		res.IP = *ipNet
+
+		lists = append(lists, res)
+	}
+	return lists, nil
+}

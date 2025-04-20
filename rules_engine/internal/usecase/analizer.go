@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"fmt"
+	"net"
 	"net/url"
 	"regexp"
 	"rules-engine/internal/entity"
@@ -9,17 +11,38 @@ import (
 )
 
 type AnalizerUseCase struct {
-	ruleRepo repository.RuleRepository
+	ruleRepo   repository.RuleRepository
+	ipListRepo repository.IPListRepository
 }
 
-func NewAnalizerUseCase(ruleRepo repository.RuleRepository) *AnalizerUseCase {
-	return &AnalizerUseCase{ruleRepo: ruleRepo}
+func NewAnalizerUseCase(ruleRepo repository.RuleRepository, ipListRepo repository.IPListRepository) *AnalizerUseCase {
+	return &AnalizerUseCase{ruleRepo: ruleRepo, ipListRepo: ipListRepo}
 }
 
-// TODO: добавить ip листы сюда
 func (a *AnalizerUseCase) AnalyzeRequest(request *entity.Request) (*entity.ScanResult, error) {
+	result, err := a.applyIPLists(request)
+	if err != nil {
+		return nil, err
+	}
+
+	// важно сначала проверить ip, так как они либо allow, либо block.
+	// если будем провериять сначала правила, то придется делать проверку на sanitize и escape. TODO: приоритеты у правил??
+	if result.Action == entity.ActionBlock {
+		return result, nil
+	}
+
+	result, err = a.applyRules(request)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (a *AnalizerUseCase) applyRules(request *entity.Request) (*entity.ScanResult, error) {
 	rules, err := a.ruleRepo.GetRulesByURL(extractPath(request.URL), request.Method)
 	if err != nil {
+		return nil, fmt.Errorf("error while loading rules for resource")
 	}
 
 	result := &entity.ScanResult{
@@ -196,4 +219,45 @@ func decodeURL(raw string) string {
 		return raw
 	}
 	return decoded
+}
+
+func (a *AnalizerUseCase) applyIPLists(request *entity.Request) (*entity.ScanResult, error) {
+	lists, err := a.ipListRepo.GetIPListsByURL(extractPath(request.URL), request.Method)
+	if err != nil {
+		return nil, fmt.Errorf("error while loading ip lists for resource")
+	}
+
+	var result *entity.ScanResult
+
+	for _, list := range lists {
+		result = a.checkIP(request, list)
+		if result.Action == entity.ActionBlock {
+			return result, nil
+		}
+	}
+	return &entity.ScanResult{
+		Action: entity.ActionAllow,
+		Reason: "Requester IP was detected in ip list.",
+	}, nil
+}
+
+func (a *AnalizerUseCase) checkIP(request *entity.Request, iPList entity.IPList) *entity.ScanResult {
+	ip := net.ParseIP(request.IP)
+	if ip == nil {
+		return &entity.ScanResult{
+			Action: entity.ActionBlock,
+			Reason: "Invalid IP address format.",
+		}
+	}
+
+	result := &entity.ScanResult{
+		Action: entity.ActionAllow,
+		Reason: "Requester IP was detected in ip list.",
+	}
+
+	if iPList.IP.Contains(ip) && iPList.ListType == "blacklist" || !iPList.IP.Contains(ip) {
+		result.Action = entity.ActionBlock
+	}
+
+	return result
 }

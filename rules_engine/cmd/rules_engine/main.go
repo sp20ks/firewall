@@ -44,7 +44,7 @@ func main() {
 	ipListUseCase := usecase.NewIPListUseCase(ipListRepo)
 	ruleUseCase := usecase.NewRuleUseCase(ruleRepo)
 	resourceUseCase := usecase.NewResourceUseCase(resourceRepo, ipListUseCase, ruleUseCase, resourceIPListRepo, resourceRuleRepo)
-	analizer := usecase.NewAnalizerUseCase(ruleRepo)
+	analizer := usecase.NewAnalizerUseCase(ruleRepo, ipListRepo)
 
 	resourceHandler := delivery.NewResourceHandler(resourceUseCase)
 	ipListHandler := delivery.NewIPListHandler(ipListUseCase)

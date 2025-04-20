@@ -8,4 +8,5 @@ type IPListRepository interface {
 	UpdateIPList(ipList *entity.IPList) error
 	GetIPList(id string) (*entity.IPList, error)
 	GetIPListsForResource(resourceID string) ([]entity.IPList, error)
+	GetIPListsByURL(url, method string) ([]entity.IPList, error)
 }
