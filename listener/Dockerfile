@@ -1,10 +1,12 @@
-FROM ruby:3.2-alpine
+FROM golang:1.23-alpine
 
-RUN apk add --no-cache build-base
 WORKDIR /app
 
-COPY . /app
-RUN gem install sinatra rackup puma
+COPY go.mod ./
+RUN go mod download
+
+COPY . .
+RUN go build -o bin/listener .
 
 EXPOSE 4567
-CMD ["ruby", "app.rb"]
+CMD ["/app/bin/listener"]

@@ -66,13 +66,11 @@ services:
       - redis_cacher_data:/data
 
   server1:
-    image: kennethreitz/httpbin
-    # build:
-      # context: ./listener
+    build:
+      context: ./listener
     container_name: server1
     ports:
-      - "9001:80"
-      # - "9001:4567"
+      - "9001:4567"
     networks:
       - firewall-network
 
