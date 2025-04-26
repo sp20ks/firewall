@@ -33,3 +33,8 @@ rebuild:
 .PHONY: lint
 lint:
 	docker-compose run --rm golangci-lint
+
+.PHONY: db
+db:
+	docker exec -it postgres-$(service) psql -U admin -d postgres-$(service)
+
