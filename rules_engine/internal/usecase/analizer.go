@@ -10,13 +10,27 @@ import (
 	"strings"
 )
 
+const sqlInjectionPattern = `(?i)(\b(select|insert|update|delete|drop|union|join|cast|create|alter|truncate|grant|revoke|nullif|execute)\b[\s\S]*?['";\-\+=])|(\b(or|and)\b\s+('[^']*'|\d+)\s*=\s*('[^']*'|\d+))|(--|#)|(;[\s]*(select|insert|update|delete|drop|create|alter|truncate))|(%27|%2D%2D|%23)`
+const xssPattern = `(?i)<script.*?>.*?</script>`
+
 type AnalizerUseCase struct {
 	ruleRepo   repository.RuleRepository
 	ipListRepo repository.IPListRepository
+
+	sqlPattern *regexp.Regexp
+	xssPattern *regexp.Regexp
 }
 
 func NewAnalizerUseCase(ruleRepo repository.RuleRepository, ipListRepo repository.IPListRepository) *AnalizerUseCase {
-	return &AnalizerUseCase{ruleRepo: ruleRepo, ipListRepo: ipListRepo}
+	sqlRegex := regexp.MustCompile(sqlInjectionPattern)
+	xssRegex := regexp.MustCompile(xssPattern)
+
+	return &AnalizerUseCase{
+		ruleRepo:   ruleRepo,
+		ipListRepo: ipListRepo,
+		sqlPattern: sqlRegex,
+		xssPattern: xssRegex,
+	}
 }
 
 func (a *AnalizerUseCase) AnalyzeRequest(request *entity.Request) (*entity.ScanResult, error) {
@@ -25,8 +39,7 @@ func (a *AnalizerUseCase) AnalyzeRequest(request *entity.Request) (*entity.ScanR
 		return nil, err
 	}
 
-	// важно сначала проверить ip, так как они либо allow, либо block.
-	// если будем провериять сначала правила, то придется делать проверку на sanitize и escape. TODO: приоритеты у правил??
+	// TODO: приоритеты у правил??
 	if result.Action == entity.ActionBlock {
 		return result, nil
 	}
@@ -46,8 +59,10 @@ func (a *AnalizerUseCase) applyRules(request *entity.Request) (*entity.ScanResul
 	}
 
 	result := &entity.ScanResult{
-		Action: entity.ActionAllow,
-		Reason: "Request passed all checks.",
+		Action:       entity.ActionAllow,
+		Reason:       "Request passed all checks.",
+		ModifiedURL:  request.URL,
+		ModifiedBody: request.Body,
 	}
 
 	for _, rule := range rules {
@@ -55,14 +70,15 @@ func (a *AnalizerUseCase) applyRules(request *entity.Request) (*entity.ScanResul
 			continue
 		}
 
+		// передаем в apply функции модифицированные url и body, чтобы в случае нескольких правил с sanitize или escape применились все действия
 		var tempResult *entity.ScanResult
 		switch rule.AttackType {
 		case "xss":
-			tempResult = a.applyXSSRule(request, &rule)
+			tempResult = a.applyXSSRule(result.ModifiedURL, result.ModifiedBody, rule)
 		case "csrf":
-			tempResult = a.applyCSRFRule(request, &rule)
+			tempResult = a.applyCSRFRule(request, rule)
 		case "sqli":
-			tempResult = a.applySQLIRule(request, &rule)
+			tempResult = a.applySQLIRule(result.ModifiedURL, result.ModifiedBody, rule)
 		default:
 			continue
 		}
@@ -72,33 +88,35 @@ func (a *AnalizerUseCase) applyRules(request *entity.Request) (*entity.ScanResul
 		}
 
 		if tempResult != nil {
-			result = tempResult
+			result.ModifiedBody = tempResult.ModifiedBody
+			result.ModifiedURL = tempResult.ModifiedURL
 		}
 	}
 
+	// важно: мы отдаем только allow или block. не даем информацию о escape или sanitize
 	return result, nil
 }
 
-func (a *AnalizerUseCase) applyXSSRule(request *entity.Request, rule *entity.Rule) *entity.ScanResult {
+func (a *AnalizerUseCase) applyXSSRule(url, body string, rule entity.Rule) *entity.ScanResult {
 	xssDetected := false
-	modifiedBody := request.Body
-	modifiedURL := request.URL
-	if matched, _ := regexp.MatchString("(?i)<script.*?>.*?</script>", request.Body); matched {
+	modifiedBody := body
+	modifiedURL := url
+	if a.xssPattern.MatchString(body) {
 		xssDetected = true
 		switch rule.ActionType {
 		case entity.ActionSanitize:
-			modifiedBody = sanitizeXSS(request.Body)
+			modifiedBody = a.sqlPattern.ReplaceAllString(body, "")
 		case entity.ActionEscape:
-			modifiedBody = escapeHTML(request.Body)
+			modifiedBody = escapeHTML(body)
 		}
 	}
 
-	decodedURL := decodeURL(request.URL)
-	if matched, _ := regexp.MatchString("(?i)<script.*?>.*?</script>", decodedURL); matched {
+	decodedURL := decodeURL(url)
+	if a.xssPattern.MatchString(decodedURL) {
 		xssDetected = true
 		switch rule.ActionType {
 		case entity.ActionSanitize:
-			modifiedURL = sanitizeXSS(decodedURL)
+			modifiedURL = a.sqlPattern.ReplaceAllString(decodedURL, "")
 		case entity.ActionEscape:
 			modifiedURL = escapeHTML(decodedURL)
 		}
@@ -111,10 +129,10 @@ func (a *AnalizerUseCase) applyXSSRule(request *entity.Request, rule *entity.Rul
 		}
 
 		if rule.ActionType != entity.ActionBlock {
-			if modifiedBody != request.Body {
+			if modifiedBody != body {
 				result.ModifiedBody = modifiedBody
 			}
-			if modifiedURL != request.URL {
+			if modifiedURL != url {
 				result.ModifiedURL = modifiedURL
 			}
 		}
@@ -125,8 +143,8 @@ func (a *AnalizerUseCase) applyXSSRule(request *entity.Request, rule *entity.Rul
 	return nil
 }
 
-func (a *AnalizerUseCase) applyCSRFRule(request *entity.Request, rule *entity.Rule) *entity.ScanResult {
-	if request.Headers["X-CSRF-Token"] == "" {
+func (a *AnalizerUseCase) applyCSRFRule(request *entity.Request, rule entity.Rule) *entity.ScanResult {
+	if request.Headers["X-Csrf-Token"] == "" {
 		return &entity.ScanResult{
 			Action: entity.ActionBlock,
 			Reason: "Missing CSRF token.",
@@ -135,30 +153,29 @@ func (a *AnalizerUseCase) applyCSRFRule(request *entity.Request, rule *entity.Ru
 	return nil
 }
 
-func (a *AnalizerUseCase) applySQLIRule(request *entity.Request, rule *entity.Rule) *entity.ScanResult {
+func (a *AnalizerUseCase) applySQLIRule(url, body string, rule entity.Rule) *entity.ScanResult {
 	sqlDetected := false
-	modifiedBody := request.Body
-	modifiedURL := request.URL
+	modifiedBody := body
+	modifiedURL := url
 
-	pattern := regexp.MustCompile(`(?i)'?\s*OR\s+1=1\s*--`)
-
-	if pattern.MatchString(request.Body) {
+	if a.sqlPattern.MatchString(body) {
 		sqlDetected = true
 		switch rule.ActionType {
 		case entity.ActionSanitize:
-			modifiedBody = pattern.ReplaceAllString(request.Body, "")
+			modifiedBody = a.sqlPattern.ReplaceAllString(body, "")
 		case entity.ActionEscape:
-			modifiedBody = escapeSQL(request.Body)
+			modifiedBody = escapeSQL(body)
 		}
 	}
 
-	if pattern.MatchString(request.URL) {
+	decodedURL := decodeURL(url)
+	if a.sqlPattern.MatchString(decodedURL) {
 		sqlDetected = true
 		switch rule.ActionType {
 		case entity.ActionSanitize:
-			modifiedURL = pattern.ReplaceAllString(request.URL, "")
+			modifiedURL = a.sqlPattern.ReplaceAllString(decodedURL, "")
 		case entity.ActionEscape:
-			modifiedURL = escapeSQL(request.URL)
+			modifiedURL = escapeSQL(decodedURL)
 		}
 	}
 
@@ -169,10 +186,10 @@ func (a *AnalizerUseCase) applySQLIRule(request *entity.Request, rule *entity.Ru
 		}
 
 		if rule.ActionType != entity.ActionBlock {
-			if modifiedBody != request.Body {
+			if modifiedBody != body {
 				result.ModifiedBody = modifiedBody
 			}
-			if modifiedURL != request.URL {
+			if modifiedURL != url {
 				result.ModifiedURL = modifiedURL
 			}
 		}
@@ -181,11 +198,6 @@ func (a *AnalizerUseCase) applySQLIRule(request *entity.Request, rule *entity.Ru
 	}
 
 	return nil
-}
-
-func sanitizeXSS(input string) string {
-	re := regexp.MustCompile("(?i)<script.*?>.*?</script>")
-	return re.ReplaceAllString(input, "")
 }
 
 func escapeHTML(input string) string {

@@ -21,12 +21,15 @@ type ErrorResponse struct {
 }
 
 func (ph *ProxyHandler) modifyRequest(ctx context.Context, r *http.Request, resource rules.Resource) (*http.Request, error) {
-	url, err := url.Parse(resource.Host)
+	rawUrl, err := url.Parse(resource.Host)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, r.Method, url.String(), r.Body)
+	queryParams := r.URL.Query().Encode()
+	url := fmt.Sprintf("%s?%s", rawUrl, queryParams)
+
+	req, err := http.NewRequestWithContext(ctx, r.Method, url, r.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -87,6 +90,7 @@ func (ph *ProxyHandler) validateRequest(r *http.Request) (int, error) {
 			headers[k] = v[0]
 		}
 	}
+
 	analysisResp, err := ph.rulesEngineClient.AnalizeRequest(
 		ip,
 		r.Method,
@@ -103,7 +107,7 @@ func (ph *ProxyHandler) validateRequest(r *http.Request) (int, error) {
 	case "block":
 		log.Printf("Blocked request from %s: %s", ip, analysisResp.Reason)
 		return http.StatusForbidden, fmt.Errorf("request blocked: %s", analysisResp.Reason)
-	case "escape", "sanitize":
+	case "allow":
 		if analysisResp.ModifiedBody != "" {
 			r.Body = io.NopCloser(bytes.NewBufferString(analysisResp.ModifiedBody))
 		}
@@ -114,7 +118,6 @@ func (ph *ProxyHandler) validateRequest(r *http.Request) (int, error) {
 			}
 		}
 	}
-
 	return http.StatusOK, nil
 }
 

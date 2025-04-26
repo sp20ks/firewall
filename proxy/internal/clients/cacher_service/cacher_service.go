@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -31,8 +30,7 @@ func NewCacherClient(url string) *CacherClient {
 }
 
 func (cc *CacherClient) GenerateCacheKey(req *http.Request) (string, error) {
-	encodedQuery := url.Values{}.Encode()
-
+	encodedQuery := req.URL.Query().Encode()
 	key := fmt.Sprintf("%s:%s?%s", req.Method, req.URL.Path, encodedQuery)
 
 	if req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch {
