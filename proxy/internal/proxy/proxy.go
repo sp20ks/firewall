@@ -91,7 +91,7 @@ func (ph *ProxyHandler) validateRequest(r *http.Request) (int, error) {
 		}
 	}
 
-	analysisResp, err := ph.rulesEngineClient.AnalizeRequest(
+	analysisResp, err := ph.rulesEngineClient.AnalyzeRequest(
 		ip,
 		r.Method,
 		r.URL.String(),

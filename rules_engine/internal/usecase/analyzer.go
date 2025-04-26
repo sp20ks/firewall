@@ -13,7 +13,7 @@ import (
 const sqlInjectionPattern = `(?i)(\b(select|insert|update|delete|drop|union|join|cast|create|alter|truncate|grant|revoke|nullif|execute)\b[\s\S]*?['";\-\+=])|(\b(or|and)\b\s+('[^']*'|\d+)\s*=\s*('[^']*'|\d+))|(--|#)|(;[\s]*(select|insert|update|delete|drop|create|alter|truncate))|(%27|%2D%2D|%23)`
 const xssPattern = `(?i)<script.*?>.*?</script>`
 
-type AnalizerUseCase struct {
+type AnalyzerUseCase struct {
 	ruleRepo   repository.RuleRepository
 	ipListRepo repository.IPListRepository
 
@@ -21,11 +21,11 @@ type AnalizerUseCase struct {
 	xssPattern *regexp.Regexp
 }
 
-func NewAnalizerUseCase(ruleRepo repository.RuleRepository, ipListRepo repository.IPListRepository) *AnalizerUseCase {
+func NewAnalyzerUseCase(ruleRepo repository.RuleRepository, ipListRepo repository.IPListRepository) *AnalyzerUseCase {
 	sqlRegex := regexp.MustCompile(sqlInjectionPattern)
 	xssRegex := regexp.MustCompile(xssPattern)
 
-	return &AnalizerUseCase{
+	return &AnalyzerUseCase{
 		ruleRepo:   ruleRepo,
 		ipListRepo: ipListRepo,
 		sqlPattern: sqlRegex,
@@ -33,7 +33,7 @@ func NewAnalizerUseCase(ruleRepo repository.RuleRepository, ipListRepo repositor
 	}
 }
 
-func (a *AnalizerUseCase) AnalyzeRequest(request *entity.Request) (*entity.ScanResult, error) {
+func (a *AnalyzerUseCase) AnalyzeRequest(request *entity.Request) (*entity.ScanResult, error) {
 	result, err := a.applyIPLists(request)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (a *AnalizerUseCase) AnalyzeRequest(request *entity.Request) (*entity.ScanR
 	return result, nil
 }
 
-func (a *AnalizerUseCase) applyRules(request *entity.Request) (*entity.ScanResult, error) {
+func (a *AnalyzerUseCase) applyRules(request *entity.Request) (*entity.ScanResult, error) {
 	rules, err := a.ruleRepo.GetRulesByURL(extractPath(request.URL), request.Method)
 	if err != nil {
 		return nil, fmt.Errorf("error while loading rules for resource")
@@ -97,7 +97,7 @@ func (a *AnalizerUseCase) applyRules(request *entity.Request) (*entity.ScanResul
 	return result, nil
 }
 
-func (a *AnalizerUseCase) applyXSSRule(url, body string, rule entity.Rule) *entity.ScanResult {
+func (a *AnalyzerUseCase) applyXSSRule(url, body string, rule entity.Rule) *entity.ScanResult {
 	xssDetected := false
 	modifiedBody := body
 	modifiedURL := url
@@ -143,7 +143,7 @@ func (a *AnalizerUseCase) applyXSSRule(url, body string, rule entity.Rule) *enti
 	return nil
 }
 
-func (a *AnalizerUseCase) applyCSRFRule(request *entity.Request, rule entity.Rule) *entity.ScanResult {
+func (a *AnalyzerUseCase) applyCSRFRule(request *entity.Request, rule entity.Rule) *entity.ScanResult {
 	if request.Headers["X-Csrf-Token"] == "" {
 		return &entity.ScanResult{
 			Action: entity.ActionBlock,
@@ -153,7 +153,7 @@ func (a *AnalizerUseCase) applyCSRFRule(request *entity.Request, rule entity.Rul
 	return nil
 }
 
-func (a *AnalizerUseCase) applySQLIRule(url, body string, rule entity.Rule) *entity.ScanResult {
+func (a *AnalyzerUseCase) applySQLIRule(url, body string, rule entity.Rule) *entity.ScanResult {
 	sqlDetected := false
 	modifiedBody := body
 	modifiedURL := url
@@ -233,7 +233,7 @@ func decodeURL(raw string) string {
 	return decoded
 }
 
-func (a *AnalizerUseCase) applyIPLists(request *entity.Request) (*entity.ScanResult, error) {
+func (a *AnalyzerUseCase) applyIPLists(request *entity.Request) (*entity.ScanResult, error) {
 	lists, err := a.ipListRepo.GetIPListsByURL(extractPath(request.URL), request.Method)
 	if err != nil {
 		return nil, fmt.Errorf("error while loading ip lists for resource")
@@ -253,7 +253,7 @@ func (a *AnalizerUseCase) applyIPLists(request *entity.Request) (*entity.ScanRes
 	}, nil
 }
 
-func (a *AnalizerUseCase) checkIP(request *entity.Request, iPList entity.IPList) *entity.ScanResult {
+func (a *AnalyzerUseCase) checkIP(request *entity.Request, iPList entity.IPList) *entity.ScanResult {
 	ip := net.ParseIP(strings.Split(request.IP, ":")[0])
 	if ip == nil {
 		return &entity.ScanResult{

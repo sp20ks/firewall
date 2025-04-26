@@ -7,11 +7,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
-	"time"
-
 	"proxy/internal/config"
 	"proxy/internal/proxy"
+	"syscall"
+	"time"
 )
 
 type Server struct {

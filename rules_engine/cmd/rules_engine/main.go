@@ -44,12 +44,12 @@ func main() {
 	ipListUseCase := usecase.NewIPListUseCase(ipListRepo)
 	ruleUseCase := usecase.NewRuleUseCase(ruleRepo)
 	resourceUseCase := usecase.NewResourceUseCase(resourceRepo, ipListUseCase, ruleUseCase, resourceIPListRepo, resourceRuleRepo)
-	analizer := usecase.NewAnalizerUseCase(ruleRepo, ipListRepo)
+	analyzer := usecase.NewAnalyzerUseCase(ruleRepo, ipListRepo)
 
 	resourceHandler := delivery.NewResourceHandler(resourceUseCase)
 	ipListHandler := delivery.NewIPListHandler(ipListUseCase)
 	ruleHandler := delivery.NewRuleHandler(ruleUseCase)
-	analizerHandler := delivery.NewAnalizerHandler(analizer)
+	analyzerHandler := delivery.NewAnalyzerHandler(analyzer)
 
 	authClient := authservice.NewAuthClient(cfg.AuthURL)
 	authMiddleware := middleware.AuthMiddleware(authClient)
@@ -71,7 +71,7 @@ func main() {
 	mux.Handle("PUT /rules/{id}", authMiddleware(http.HandlerFunc(ruleHandler.HandleUpdateRule)))
 	mux.HandleFunc("GET /rules", ruleHandler.HandleGetRules)
 
-	mux.HandleFunc("GET /analize", analizerHandler.HandleAnalizeRequest)
+	mux.HandleFunc("GET /analyze", analyzerHandler.HandleAnalyzeRequest)
 
 	srv := &http.Server{
 		Addr:    cfg.Address,

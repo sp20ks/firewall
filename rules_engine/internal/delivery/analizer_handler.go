@@ -8,15 +8,15 @@ import (
 	"rules-engine/internal/usecase"
 )
 
-type AnalizerHandler struct {
-	analizer *usecase.AnalizerUseCase
+type AnalyzerHandler struct {
+	analyzer *usecase.AnalyzerUseCase
 }
 
-func NewAnalizerHandler(analizer *usecase.AnalizerUseCase) *AnalizerHandler {
-	return &AnalizerHandler{analizer: analizer}
+func NewAnalyzerHandler(analyzer *usecase.AnalyzerUseCase) *AnalyzerHandler {
+	return &AnalyzerHandler{analyzer: analyzer}
 }
 
-func (h *AnalizerHandler) HandleAnalizeRequest(w http.ResponseWriter, r *http.Request) {
+func (h *AnalyzerHandler) HandleAnalyzeRequest(w http.ResponseWriter, r *http.Request) {
 	var req entity.Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Printf("Failed parse body: %v", err)
@@ -24,7 +24,7 @@ func (h *AnalizerHandler) HandleAnalizeRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	result, err := h.analizer.AnalyzeRequest(&req)
+	result, err := h.analyzer.AnalyzeRequest(&req)
 	if err != nil {
 		log.Printf("Error analyzing request: %v", err)
 		http.Error(w, "Error analyzing request", http.StatusInternalServerError)

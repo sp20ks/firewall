@@ -23,7 +23,7 @@ type RulesEngineClient struct {
 	rulesEngineURL string
 }
 
-type AnalizerRequest struct {
+type AnalyzerRequest struct {
 	IP      string            `json:"ip"`
 	Method  string            `json:"method"`
 	URL     string            `json:"url"`
@@ -31,7 +31,7 @@ type AnalizerRequest struct {
 	Body    string            `json:"body"`
 }
 
-type AnalizerResponse struct {
+type AnalyzerResponse struct {
 	Action       string `json:"action"`
 	ModifiedURL  string `json:"modified_url,omitempty"`
 	ModifiedBody string `json:"modified_body,omitempty"`
@@ -64,13 +64,13 @@ func (re *RulesEngineClient) GetResources() ([]Resource, error) {
 	return resourcesResp.Resources, nil
 }
 
-func (re *RulesEngineClient) AnalizeRequest(ip, method, url, body string, headers map[string]string) (*AnalizerResponse, error) {
-	respBody, err := json.Marshal(AnalizerRequest{IP: ip, Method: method, URL: url, Body: body, Headers: headers})
+func (re *RulesEngineClient) AnalyzeRequest(ip, method, url, body string, headers map[string]string) (*AnalyzerResponse, error) {
+	respBody, err := json.Marshal(AnalyzerRequest{IP: ip, Method: method, URL: url, Body: body, Headers: headers})
 	if err != nil {
 		return nil, err
 	}
 
-	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/analize", re.rulesEngineURL), bytes.NewBuffer(respBody))
+	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/analyze", re.rulesEngineURL), bytes.NewBuffer(respBody))
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -81,10 +81,10 @@ func (re *RulesEngineClient) AnalizeRequest(ip, method, url, body string, header
 		return nil, fmt.Errorf("error check request: %w", err)
 	}
 	defer resp.Body.Close()
-	var analizerResp AnalizerResponse
-	if err := json.NewDecoder(resp.Body).Decode(&analizerResp); err != nil {
+	var analyzerResp AnalyzerResponse
+	if err := json.NewDecoder(resp.Body).Decode(&analyzerResp); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &analizerResp, nil
+	return &analyzerResp, nil
 }
