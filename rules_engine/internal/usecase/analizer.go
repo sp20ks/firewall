@@ -254,7 +254,7 @@ func (a *AnalizerUseCase) applyIPLists(request *entity.Request) (*entity.ScanRes
 }
 
 func (a *AnalizerUseCase) checkIP(request *entity.Request, iPList entity.IPList) *entity.ScanResult {
-	ip := net.ParseIP(request.IP)
+	ip := net.ParseIP(strings.Split(request.IP, ":")[0])
 	if ip == nil {
 		return &entity.ScanResult{
 			Action: entity.ActionBlock,
