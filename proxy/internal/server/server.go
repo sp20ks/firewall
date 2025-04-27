@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"proxy/internal/config"
+	"proxy/internal/logger"
 	"proxy/internal/proxy"
 	"syscall"
 	"time"
@@ -35,6 +36,12 @@ func NewServer(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) Start(ctx context.Context) error {
+	logger.InitLogger()
+	defer logger.Log.Sync()
+	logger.Log.Infow("proxy service started",
+		"service", "proxy",
+		"version", "v1.0.0",
+	)
 	go func() {
 		log.Printf("Starting server on %s", s.addr)
 		if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

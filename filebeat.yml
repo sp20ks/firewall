@@ -1,0 +1,20 @@
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true
+      templates:
+        - config:
+            - type: container
+              paths:
+                - /var/lib/docker/containers/${data.container.id}/*.log
+              json.keys_under_root: true
+              json.add_error_key: true
+              processors:
+                - add_docker_metadata: ~
+                - drop_event:
+                    when:
+                      not:
+                        has_fields: ["level", "msg"]
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
