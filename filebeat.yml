@@ -12,8 +12,11 @@ filebeat.inputs:
       - drop_event:
           when:
             not:
-              regexp:
-                container.name: "proxy.*"
+              or:
+                - regexp:
+                    container.name: "proxy.*"
+                - regexp:
+                    container.name: "auth.*"
 
 output.elasticsearch:
-  hosts: ["elasticsearch:9200"] 
+  hosts: ["elasticsearch:9200"]

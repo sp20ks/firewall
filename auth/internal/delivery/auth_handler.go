@@ -2,10 +2,12 @@ package delivery
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
+	"auth/internal/logger"
 	"auth/internal/usecase"
+
+	"go.uber.org/zap"
 )
 
 type AuthHandler struct {
@@ -54,7 +56,7 @@ func (h *AuthHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 	err := h.authUseCase.CreateUser(req.Username, req.Password)
 	if err != nil {
 		// TODO: если юзер уже есть, то должна возвращаться читаемая ошибка, а не как сейчас.
-		log.Printf("Failed create user: %v", err)
+		logger.Logger().Info("failed to create user", zap.Error(err))
 		sendJSONResponse(w, http.StatusBadRequest, ErrorResponse{"Error while creating user"})
 		return
 	}
@@ -65,7 +67,7 @@ func (h *AuthHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 func (h *AuthHandler) HandleGetJwtToken(w http.ResponseWriter, r *http.Request) {
 	var req UserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("Failed parse body: %v", err)
+		logger.Logger().Info("failed to parse body", zap.Error(err))
 		sendJSONResponse(w, http.StatusBadRequest, ErrorResponse{"Invalid request body"})
 		return
 	}
@@ -77,7 +79,7 @@ func (h *AuthHandler) HandleGetJwtToken(w http.ResponseWriter, r *http.Request) 
 
 	tokenString, err := h.authUseCase.Authenticate(req.Username, req.Password)
 	if err != nil {
-		log.Printf("Failed to authenticate: %v", err)
+		logger.Logger().Info("failed to authenticate", zap.Error(err))
 		sendJSONResponse(w, http.StatusUnauthorized, ErrorResponse{"Invalid credentials"})
 		return
 	}
@@ -94,7 +96,7 @@ func (h *AuthHandler) VerifyJwtToken(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.authUseCase.GetUserByToken(token)
 	if err != nil {
-		log.Printf("Failed verify token: %v", err)
+		logger.Logger().Info("failed to verify token", zap.Error(err))
 		sendJSONResponse(w, http.StatusUnauthorized, ErrorResponse{"Invalid token"})
 		return
 	}

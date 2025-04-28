@@ -3,6 +3,7 @@ package main
 import (
 	"auth/internal/config"
 	"auth/internal/delivery"
+	"auth/internal/logger"
 	"auth/internal/repository/postgres"
 	"auth/internal/usecase"
 	"context"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -48,7 +50,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Starting server on %s", cfg.Address)
+		logger.Logger().Info(fmt.Sprintf("starting server on %s", cfg.Address))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 			os.Exit(1)
@@ -63,6 +65,6 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("Failed to shutdown server: %v", err)
+		logger.Logger().Info("failed to shutdown server", zap.Error(err))
 	}
 }
