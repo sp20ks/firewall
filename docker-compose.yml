@@ -164,6 +164,19 @@ services:
     volumes:
       - postgres_rules_engine_data:/var/lib/postgresql/data
   
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.13.0
+    container_name: filebeat
+    user: root
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - firewall-network
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
     container_name: elasticsearch
@@ -171,6 +184,11 @@ services:
       - discovery.type=single-node # одна нода, иначе контейнер не запустится, будет искать другие ноды для объединения в кластер
       - xpack.security.enabled=false # отключаем безопасность, tls и логин пользователя
       - ES_JAVA_OPTS=-Xms512m -Xmx512m # xms - размер heap памяти на старте JVM, xmx - максимальный доступный
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-f", "http://localhost:9200/_cat/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 80
     ports:
       - "9200:9200"
     networks:
@@ -187,23 +205,6 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     networks:
       - firewall-network
-    depends_on:
-      - elasticsearch
-
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:8.13.0
-    container_name: filebeat
-    user: root
-    volumes:
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    networks:
-      - firewall-network
-    depends_on:
-      - elasticsearch
 
 networks:
   firewall-network:

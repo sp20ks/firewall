@@ -1,20 +1,19 @@
-filebeat.autodiscover:
-  providers:
-    - type: docker
-      hints.enabled: true
-      templates:
-        - config:
-            - type: container
-              paths:
-                - /var/lib/docker/containers/${data.container.id}/*.log
-              json.keys_under_root: true
-              json.add_error_key: true
-              processors:
-                - add_docker_metadata: ~
-                - drop_event:
-                    when:
-                      not:
-                        has_fields: ["level", "msg"]
+filebeat.inputs:
+  - type: container
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    parsers:
+      - ndjson:
+          keys_under_root: true
+          overwrite_keys: true
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - drop_event:
+          when:
+            not:
+              regexp:
+                container.name: "proxy.*"
 
 output.elasticsearch:
-  hosts: ["http://elasticsearch:9200"]
+  hosts: ["elasticsearch:9200"] 
