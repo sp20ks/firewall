@@ -19,6 +19,8 @@ filebeat.inputs:
                     container.name: "auth.*"
                 - regexp:
                     container.name: "cacher.*"
+                - regexp:
+                    container.name: "ratelimiter.*"
 
 output.elasticsearch:
   hosts: ["elasticsearch:9200"]
