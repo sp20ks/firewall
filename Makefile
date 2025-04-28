@@ -38,3 +38,6 @@ lint:
 db:
 	docker exec -it postgres-$(service) psql -U admin -d postgres-$(service)
 
+.PHONY: logs-filebeat
+logs-filebeat:
+	docker-compose logs -f filebeat
