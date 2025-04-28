@@ -2,10 +2,12 @@ package delivery
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"rules-engine/internal/entity"
+	"rules-engine/internal/logger"
 	"rules-engine/internal/usecase"
+
+	"go.uber.org/zap"
 )
 
 type AnalyzerHandler struct {
@@ -18,15 +20,16 @@ func NewAnalyzerHandler(analyzer *usecase.AnalyzerUseCase) *AnalyzerHandler {
 
 func (h *AnalyzerHandler) HandleAnalyzeRequest(w http.ResponseWriter, r *http.Request) {
 	var req entity.Request
+	l := logger.Logger()
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("Failed parse body: %v", err)
+		l.Info("failed parse body", zap.Error(err))
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	result, err := h.analyzer.AnalyzeRequest(&req)
 	if err != nil {
-		log.Printf("Error analyzing request: %v", err)
+		l.Info("error analyzing request", zap.Error(err))
 		http.Error(w, "Error analyzing request", http.StatusInternalServerError)
 		return
 	}
@@ -34,7 +37,7 @@ func (h *AnalyzerHandler) HandleAnalyzeRequest(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(result); err != nil {
-		log.Printf("Error encoding response: %v", err)
+		l.Info("error encoding response", zap.Error(err))
 		http.Error(w, "Error while encoding response", http.StatusInternalServerError)
 	}
 }

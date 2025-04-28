@@ -2,10 +2,12 @@ package delivery
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"rules-engine/internal/entity"
+	"rules-engine/internal/logger"
 	"rules-engine/internal/usecase"
+
+	"go.uber.org/zap"
 )
 
 type RuleHandler struct {
@@ -42,7 +44,7 @@ func (h *RuleHandler) HandleCreateRule(w http.ResponseWriter, r *http.Request) {
 
 	err := h.ruleUseCase.Create(req.Name, req.AttackType, req.ActionType, req.CreatorID, req.IsActive)
 	if err != nil {
-		log.Printf("Failed to create rule: %v", err)
+		logger.Logger().Info("failed to create rule", zap.Error(err))
 		http.Error(w, "Error while creating rule", http.StatusBadRequest)
 		return
 	}
@@ -71,7 +73,7 @@ func (h *RuleHandler) HandleUpdateRule(w http.ResponseWriter, r *http.Request) {
 
 	err := h.ruleUseCase.Update(id, req.Name, req.AttackType, req.ActionType, req.IsActive)
 	if err != nil {
-		log.Printf("Failed to update rule: %v", err)
+		logger.Logger().Info("failed to update rule", zap.Error(err))
 		http.Error(w, "Error while updating rule", http.StatusBadRequest)
 		return
 	}
@@ -83,7 +85,7 @@ func (h *RuleHandler) HandleUpdateRule(w http.ResponseWriter, r *http.Request) {
 func (h *RuleHandler) HandleGetRules(w http.ResponseWriter, r *http.Request) {
 	rules, err := h.ruleUseCase.Get()
 	if err != nil {
-		log.Printf("Failed to get rules: %v", err)
+		logger.Logger().Info("failed to get rules", zap.Error(err))
 		http.Error(w, "Error while fetching rules", http.StatusInternalServerError)
 		return
 	}
@@ -98,7 +100,7 @@ func (h *RuleHandler) HandleGetRules(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding rules: %v", err)
+		logger.Logger().Info("failed to encode rules", zap.Error(err))
 		http.Error(w, "Error while encoding rules", http.StatusInternalServerError)
 		return
 	}

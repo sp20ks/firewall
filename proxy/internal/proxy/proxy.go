@@ -8,10 +8,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	rules "proxy/internal/clients/rules_engine_service"
 	"proxy/internal/logger"
 
 	"go.uber.org/zap"
-	rules "proxy/internal/clients/rules_engine_service"
 )
 
 type ErrorResponse struct {

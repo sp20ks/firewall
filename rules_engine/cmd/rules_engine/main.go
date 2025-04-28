@@ -12,12 +12,14 @@ import (
 	"rules-engine/internal/config"
 	"rules-engine/internal/delivery"
 	"rules-engine/internal/delivery/middleware"
+	"rules-engine/internal/logger"
 	"rules-engine/internal/repository/postgres"
 	"rules-engine/internal/usecase"
 	"syscall"
 	"time"
 
 	_ "github.com/lib/pq"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -79,7 +81,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Starting server on %s", cfg.Address)
+		logger.Logger().Info(fmt.Sprintf("starting server on %s", cfg.Address))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 			os.Exit(1)
@@ -94,6 +96,6 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("Failed to shutdown server: %v", err)
+		logger.Logger().Info("failed to shutdown server", zap.Error(err))
 	}
 }

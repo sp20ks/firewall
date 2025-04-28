@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"proxy/internal/config"
-	"proxy/internal/logger"
 	"time"
 
-	"github.com/google/uuid"
-	"go.uber.org/zap"
 	cacher "proxy/internal/clients/cacher_service"
 	ratelimiter "proxy/internal/clients/ratelimiter_service"
 	rules "proxy/internal/clients/rules_engine_service"
+	"proxy/internal/config"
+	"proxy/internal/logger"
+
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type ResourceMap map[string]map[string]rules.Resource

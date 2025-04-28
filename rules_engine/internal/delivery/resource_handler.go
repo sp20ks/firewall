@@ -2,10 +2,12 @@ package delivery
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"rules-engine/internal/entity"
+	"rules-engine/internal/logger"
 	"rules-engine/internal/usecase"
+
+	"go.uber.org/zap"
 )
 
 type ResourceHandler struct {
@@ -51,7 +53,7 @@ func (h *ResourceHandler) HandleCreateResource(w http.ResponseWriter, r *http.Re
 
 	err := h.resourceUseCase.Create(req.Name, req.HTTPMethod, req.URL, req.Host, req.CreatorID, req.IsActive)
 	if err != nil {
-		log.Printf("Failed to create resource: %v", err)
+		logger.Logger().Info("failed to create resource", zap.Error(err))
 		http.Error(w, "Error while creating resource", http.StatusBadRequest)
 		return
 	}
@@ -80,7 +82,7 @@ func (h *ResourceHandler) HandleUpdateResource(w http.ResponseWriter, r *http.Re
 
 	err := h.resourceUseCase.Update(id, req.Name, req.HTTPMethod, req.URL, req.Host, req.IsActive)
 	if err != nil {
-		log.Printf("Failed to update resource: %v", err)
+		logger.Logger().Info("failed to update resource", zap.Error(err))
 		http.Error(w, "Error while updating resource", http.StatusBadRequest)
 		return
 	}
@@ -106,7 +108,7 @@ func (h *ResourceHandler) HandleGetActiveResources(w http.ResponseWriter, r *htt
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding resources: %v", err)
+		logger.Logger().Info("failed to encode resources", zap.Error(err))
 		http.Error(w, "Error while encoding resources", http.StatusInternalServerError)
 		return
 	}
@@ -132,7 +134,7 @@ func (h *ResourceHandler) HandleAttachIPList(w http.ResponseWriter, r *http.Requ
 
 	err := h.resourceUseCase.AttachIPList(id, req.IPListID)
 	if err != nil {
-		log.Printf("Failed to attach IP list: %v", err)
+		logger.Logger().Info("failed to attach IP list", zap.Error(err))
 		http.Error(w, "Error while attaching IP list", http.StatusInternalServerError)
 		return
 	}
@@ -161,7 +163,7 @@ func (h *ResourceHandler) HandleDetachIPList(w http.ResponseWriter, r *http.Requ
 
 	err := h.resourceUseCase.DetachIPList(id, req.IPListID)
 	if err != nil {
-		log.Printf("Failed to detach IP list: %v", err)
+		logger.Logger().Info("failed to detach IP list", zap.Error(err))
 		http.Error(w, "Error while detaching IP list", http.StatusInternalServerError)
 		return
 	}
@@ -190,7 +192,7 @@ func (h *ResourceHandler) HandleAttachRule(w http.ResponseWriter, r *http.Reques
 
 	err := h.resourceUseCase.AttachRule(id, req.RuleID)
 	if err != nil {
-		log.Printf("Failed to attach rule: %v", err)
+		logger.Logger().Info("failed to attach rule", zap.Error(err))
 		http.Error(w, "Error while attaching rule", http.StatusInternalServerError)
 		return
 	}
@@ -219,7 +221,7 @@ func (h *ResourceHandler) HandleDetachRule(w http.ResponseWriter, r *http.Reques
 
 	err := h.resourceUseCase.DetachRule(id, req.RuleID)
 	if err != nil {
-		log.Printf("Failed to detach rule: %v", err)
+		logger.Logger().Info("failed to detach rule", zap.Error(err))
 		http.Error(w, "Error while detaching rule", http.StatusInternalServerError)
 		return
 	}

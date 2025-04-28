@@ -2,10 +2,12 @@ package delivery
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"rules-engine/internal/entity"
+	"rules-engine/internal/logger"
 	"rules-engine/internal/usecase"
+
+	"go.uber.org/zap"
 )
 
 type IPListHandler struct {
@@ -40,7 +42,7 @@ func (h *IPListHandler) HandleCreateIPList(w http.ResponseWriter, r *http.Reques
 
 	err := h.ipListUseCase.Create(req.IP, req.ListType, req.CreatorID)
 	if err != nil {
-		log.Printf("Failed to create ip list: %v", err)
+		logger.Logger().Info("failed to create ip list", zap.Error(err))
 		http.Error(w, "Error while creating ip list", http.StatusBadRequest)
 		return
 	}
@@ -69,7 +71,7 @@ func (h *IPListHandler) HandleUpdateIPList(w http.ResponseWriter, r *http.Reques
 
 	err := h.ipListUseCase.Update(id, req.IP, req.ListType)
 	if err != nil {
-		log.Printf("Failed to update ip list: %v", err)
+		logger.Logger().Info("failed to update ip list", zap.Error(err))
 		http.Error(w, "Error while updating ip list", http.StatusBadRequest)
 		return
 	}
@@ -81,7 +83,7 @@ func (h *IPListHandler) HandleUpdateIPList(w http.ResponseWriter, r *http.Reques
 func (h *IPListHandler) HandleGetIPLists(w http.ResponseWriter, r *http.Request) {
 	lists, err := h.ipListUseCase.Get()
 	if err != nil {
-		log.Printf("Failed to get ip lists: %v", err)
+		logger.Logger().Info("failed to get ip lists", zap.Error(err))
 		http.Error(w, "Error while fetching ip lists", http.StatusInternalServerError)
 		return
 	}
@@ -96,7 +98,7 @@ func (h *IPListHandler) HandleGetIPLists(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding ip lists: %v", err)
+		logger.Logger().Info("failed to encode ip lists", zap.Error(err))
 		http.Error(w, "Error while encoding ip lists", http.StatusInternalServerError)
 		return
 	}

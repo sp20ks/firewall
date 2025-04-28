@@ -2,11 +2,13 @@ package usecase
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"rules-engine/internal/entity"
+	"rules-engine/internal/logger"
 	"rules-engine/internal/repository"
+
+	"go.uber.org/zap"
 )
 
 type ResourceUseCase struct {
@@ -92,13 +94,21 @@ func (r *ResourceUseCase) Get() ([]entity.Resource, error) {
 	for i, res := range resources {
 		ipLists, err := r.iPListUseCase.GetIPListsForResource(res.ID)
 		if err != nil {
-			log.Printf("error fetching IP lists for resource %s: %v", res.ID, err)
+			logger.Logger().Info(
+				"error fetching IP lists for resource",
+				zap.String("resource_id", res.ID),
+				zap.Error(err),
+			)
 		} else {
 			resources[i].IPLists = ipLists
 		}
 		rules, err := r.ruleUseCase.GetRulesForResource(res.ID)
 		if err != nil {
-			log.Printf("error fetching rules for resource %s: %v", res.ID, err)
+			logger.Logger().Info(
+				"error fetching rules for resource",
+				zap.String("resource_id", res.ID),
+				zap.Error(err),
+			)
 		} else {
 			resources[i].Rules = rules
 		}
