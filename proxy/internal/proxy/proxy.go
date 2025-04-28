@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
+	"proxy/internal/logger"
 
+	"go.uber.org/zap"
 	rules "proxy/internal/clients/rules_engine_service"
 )
 
@@ -59,23 +60,25 @@ func (ph *ProxyHandler) forwardRequest(ctx context.Context, req *http.Request) (
 
 func WriteJSONResponse(w http.ResponseWriter, data interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json")
+	l := logger.Logger()
 
 	if status >= http.StatusBadRequest {
-		log.Printf("Error response: status=%d, error=%+v", status, data)
+		l.Info("error response", zap.Int("status", status))
 	}
 
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		log.Printf("Failed to encode JSON response: %v", err)
+		l.Info("failed to encode JSON response", zap.Error(err))
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 	}
 }
 
 func (ph *ProxyHandler) validateRequest(r *http.Request) (int, error) {
 	ip := ReadUserIP(r)
+	l := logger.Logger()
 
 	if allowed, err := ph.rateLimiterClient.CheckLimit(ip); !allowed {
-		log.Printf("Rate limit error ip=%s: %v", ip, err)
+		l.Info("rate limit error", zap.String("ip", ip), zap.Error(err))
 		return http.StatusTooManyRequests, fmt.Errorf("too many requests")
 	}
 
@@ -99,13 +102,13 @@ func (ph *ProxyHandler) validateRequest(r *http.Request) (int, error) {
 		headers,
 	)
 	if err != nil {
-		log.Printf("Error analyzing request: %v", err)
+		l.Info("error analyzing request", zap.Error(err))
 		return http.StatusInternalServerError, fmt.Errorf("error analyzing request")
 	}
 
 	switch analysisResp.Action {
 	case "block":
-		log.Printf("Blocked request from %s: %s", ip, analysisResp.Reason)
+		l.Info("blocker request from ip", zap.String("ip", ip), zap.String("reason", analysisResp.Reason))
 		return http.StatusForbidden, fmt.Errorf("request blocked: %s", analysisResp.Reason)
 	case "allow":
 		if analysisResp.ModifiedBody != "" {

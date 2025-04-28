@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,6 +11,8 @@ import (
 	"proxy/internal/proxy"
 	"syscall"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type Server struct {
@@ -36,16 +37,11 @@ func NewServer(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	logger.InitLogger()
-	defer logger.Log.Sync()
-	logger.Log.Infow("proxy service started",
-		"service", "proxy",
-		"version", "v1.0.0",
-	)
+	l := logger.LoggerFromContext(ctx)
 	go func() {
-		log.Printf("Starting server on %s", s.addr)
+		l.Info(fmt.Sprintf("Starting server on %s", s.addr))
 		if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("server startup failed: %v", err)
+			l.Info(fmt.Sprintf("server startup failed: %v", err))
 			os.Exit(1)
 		}
 	}()
@@ -57,7 +53,7 @@ func (s *Server) Start(ctx context.Context) error {
 	case <-ctx.Done():
 		return s.shutdown()
 	case sig := <-stopChan:
-		log.Printf("received signal %s", sig)
+		l.Info(fmt.Sprintf("received signal %s", sig))
 		return s.shutdown()
 	}
 }
@@ -70,13 +66,17 @@ func (s *Server) shutdown() error {
 	if err != nil {
 		return fmt.Errorf("server shutdown failed: %v", err)
 	}
-	log.Println("server stopped")
 	return nil
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Received request: method=%s, path=%s, remote=%s", r.Method, r.URL.Path, proxy.ReadUserIP(r))
+		logger.Logger().Info(
+			"Received request",
+			zap.String("method", r.Method),
+			zap.String("path", r.URL.Path),
+			zap.String("remote_ip", proxy.ReadUserIP(r)),
+		)
 		next.ServeHTTP(w, r)
 	})
 }

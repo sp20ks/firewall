@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"proxy/internal/config"
+	"proxy/internal/logger"
 	"time"
 
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 	cacher "proxy/internal/clients/cacher_service"
 	ratelimiter "proxy/internal/clients/ratelimiter_service"
 	rules "proxy/internal/clients/rules_engine_service"
-
-	"github.com/google/uuid"
 )
 
 type ResourceMap map[string]map[string]rules.Resource
@@ -58,6 +58,7 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestID := uuid.NewString()
 	ctx = context.WithValue(ctx, "request-id", requestID)
+	l := logger.Logger()
 
 	resourceMethods, pathExists := ph.resources[r.URL.Path]
 	if !pathExists {
@@ -96,12 +97,12 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cacheKey, _ := ph.cacherClient.GenerateCacheKey(r)
 	cachedData, err := ph.cacherClient.GetCache(ctx, cacheKey)
 	if err == nil {
-		log.Printf("request with id=%s was cached", requestID)
+		l.Info("request was cached", zap.String("request_id", requestID))
 
 		w.Write([]byte(cachedData))
 		return
 	} else {
-		log.Printf("error while getting cache by key=%s: %v", cacheKey, err)
+		l.Info("error while getting cache by key", zap.String("key", cacheKey), zap.Error(err))
 	}
 
 	req, err := ph.modifyRequest(ctx, r, resource)
@@ -118,7 +119,7 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := ph.forwardRequest(ctx, req)
 	if err != nil {
-		log.Printf("error while proxing request: %v", err)
+		l.Info("error while proxing request", zap.String("key", cacheKey), zap.Error(err))
 
 		errResp := ErrorResponse{
 			Error:      "proxy error",
@@ -135,7 +136,7 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// go func() {
 	err = ph.cacherClient.SetCache(ctx, cacheKey, string(respBody))
 	if err != nil {
-		log.Printf("failed to cache response: %v", err)
+		l.Info("failed to cache response", zap.String("key", cacheKey), zap.Error(err))
 	}
 	// }()
 

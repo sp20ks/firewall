@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"proxy/internal/config"
+	"proxy/internal/logger"
 	"proxy/internal/server"
 )
 
@@ -19,7 +20,13 @@ func main() {
 		log.Fatalf("Error initializing server: %v", err)
 	}
 
-	err = server.Start(context.Background())
+	l := logger.Logger()
+	if err != nil {
+		log.Fatalf("Error logger server: %v", err)
+	}
+
+	ctx := logger.ContextWithLogger(context.Background(), l)
+	err = server.Start(ctx)
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
