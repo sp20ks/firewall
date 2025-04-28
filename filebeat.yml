@@ -17,6 +17,8 @@ filebeat.inputs:
                     container.name: "proxy.*"
                 - regexp:
                     container.name: "auth.*"
+                - regexp:
+                    container.name: "cacher.*"
 
 output.elasticsearch:
   hosts: ["elasticsearch:9200"]

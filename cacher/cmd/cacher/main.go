@@ -3,13 +3,17 @@ package main
 import (
 	"cacher/internal/cacher"
 	"cacher/internal/config"
+	"cacher/internal/logger"
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -25,7 +29,7 @@ func main() {
 
 	defer func() {
 		if err := redisCacher.Close(); err != nil {
-			log.Printf("Error closing Redis connection: %v", err)
+			logger.Logger().Info("error closing Redis connection", zap.Error(err))
 		}
 	}()
 
@@ -39,7 +43,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Starting server on %s", cfg.Address)
+		logger.Logger().Info(fmt.Sprintf("starting server on %s", cfg.Address))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 			os.Exit(1)
@@ -54,6 +58,6 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("Failed to shutdown server: %v", err)
+		logger.Logger().Info("failed to shutdown server", zap.Error(err))
 	}
 }
