@@ -35,11 +35,15 @@ type AnalyzerRequest struct {
 	Body    string            `json:"body"`
 }
 
-type AnalyzerResponse struct {
+type AnalyzerResult struct {
 	Action       string `json:"action"`
 	ModifiedURL  string `json:"modified_url,omitempty"`
 	ModifiedBody string `json:"modified_body,omitempty"`
 	Reason       string `json:"reason"`
+}
+
+type AnalyzerResponse struct {
+	Data AnalyzerResult `json:"data"`
 }
 
 func NewRulesEngineClient(url string) *RulesEngineClient {
@@ -68,7 +72,7 @@ func (re *RulesEngineClient) GetResources() ([]Resource, error) {
 	return resourcesResp.Data.Resources, nil
 }
 
-func (re *RulesEngineClient) AnalyzeRequest(ip, method, url, body string, headers map[string]string) (*AnalyzerResponse, error) {
+func (re *RulesEngineClient) AnalyzeRequest(ip, method, url, body string, headers map[string]string) (*AnalyzerResult, error) {
 	respBody, err := json.Marshal(AnalyzerRequest{IP: ip, Method: method, URL: url, Body: body, Headers: headers})
 	if err != nil {
 		return nil, err
@@ -90,5 +94,5 @@ func (re *RulesEngineClient) AnalyzeRequest(ip, method, url, body string, header
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &analyzerResp, nil
+	return &analyzerResp.Data, nil
 }
