@@ -5,16 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 	cacher "proxy/internal/clients/cacher_service"
 	ratelimiter "proxy/internal/clients/ratelimiter_service"
 	rules "proxy/internal/clients/rules_engine_service"
 	"proxy/internal/config"
 	"proxy/internal/logger"
-
-	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
 type ResourceMap map[string]map[string]rules.Resource
@@ -63,36 +61,18 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resourceMethods, pathExists := ph.resources[r.URL.Path]
 	if !pathExists {
-		errResp := ErrorResponse{
-			Error:      "endpoint not found",
-			StatusCode: http.StatusNotFound,
-			Timestamp:  time.Now().Format(time.RFC3339),
-			RequestID:  requestID,
-		}
-		WriteJSONResponse(w, errResp, http.StatusNotFound)
+		WriteJSONResponse(w, NewErrorResponse("endpoint not found", http.StatusNotFound, requestID), http.StatusNotFound)
 		return
 	}
 
 	resource, methodExists := resourceMethods[r.Method]
 	if !methodExists {
-		errResp := ErrorResponse{
-			Error:      "method not allowed",
-			StatusCode: http.StatusMethodNotAllowed,
-			Timestamp:  time.Now().Format(time.RFC3339),
-			RequestID:  requestID,
-		}
-		WriteJSONResponse(w, errResp, http.StatusMethodNotAllowed)
+		WriteJSONResponse(w, NewErrorResponse("method not allowed", http.StatusMethodNotAllowed, requestID), http.StatusMethodNotAllowed)
 		return
 	}
 
 	if code, err := ph.validateRequest(r); err != nil {
-		errResp := ErrorResponse{
-			Error:      err.Error(),
-			StatusCode: code,
-			Timestamp:  time.Now().Format(time.RFC3339),
-			RequestID:  requestID,
-		}
-		WriteJSONResponse(w, errResp, code)
+		WriteJSONResponse(w, NewErrorResponse(err.Error(), code, requestID), code)
 		return
 	}
 	cacheKey, _ := ph.cacherClient.GenerateCacheKey(r)
@@ -108,13 +88,7 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	req, err := ph.modifyRequest(ctx, r, resource)
 	if err != nil {
-		errResp := ErrorResponse{
-			Error:      "internal server error",
-			StatusCode: http.StatusInternalServerError,
-			Timestamp:  time.Now().Format(time.RFC3339),
-			RequestID:  requestID,
-		}
-		WriteJSONResponse(w, errResp, http.StatusInternalServerError)
+		WriteJSONResponse(w, NewErrorResponse("internal server error", http.StatusInternalServerError, requestID), http.StatusInternalServerError)
 		return
 	}
 
@@ -122,13 +96,7 @@ func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Info("error while proxing request", zap.String("key", cacheKey), zap.Error(err))
 
-		errResp := ErrorResponse{
-			Error:      "proxy error",
-			StatusCode: http.StatusInternalServerError,
-			Timestamp:  time.Now().Format(time.RFC3339),
-			RequestID:  requestID,
-		}
-		WriteJSONResponse(w, errResp, http.StatusInternalServerError)
+		WriteJSONResponse(w, NewErrorResponse("proxy error", http.StatusInternalServerError, requestID), http.StatusInternalServerError)
 		return
 	}
 	respBody, _ := io.ReadAll(resp.Body)

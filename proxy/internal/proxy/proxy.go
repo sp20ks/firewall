@@ -3,24 +3,15 @@ package proxy
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
+	"go.uber.org/zap"
 	rules "proxy/internal/clients/rules_engine_service"
 	"proxy/internal/logger"
-
-	"go.uber.org/zap"
 )
-
-type ErrorResponse struct {
-	Error      string `json:"error"`
-	StatusCode int    `json:"status_code"`
-	Timestamp  string `json:"timestamp"`
-	RequestID  string `json:"request_id,omitempty"`
-}
 
 func (ph *ProxyHandler) modifyRequest(ctx context.Context, r *http.Request, resource rules.Resource) (*http.Request, error) {
 	rawUrl, err := url.Parse(resource.Host)
@@ -57,21 +48,6 @@ func (ph *ProxyHandler) forwardRequest(ctx context.Context, req *http.Request) (
 	}
 
 	return resp, nil
-}
-
-func WriteJSONResponse(w http.ResponseWriter, data interface{}, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	l := logger.Logger()
-
-	if status >= http.StatusBadRequest {
-		l.Info("error response", zap.Int("status", status))
-	}
-
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		l.Info("failed to encode JSON response", zap.Error(err))
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-	}
 }
 
 func (ph *ProxyHandler) validateRequest(r *http.Request) (int, error) {
