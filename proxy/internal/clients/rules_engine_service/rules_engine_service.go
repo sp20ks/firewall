@@ -15,8 +15,12 @@ type Resource struct {
 	Method string `json:"http_method"`
 }
 
-type ResourcesResponse struct {
+type resourcesWrapper struct {
 	Resources []Resource `json:"resources"`
+}
+
+type ResourcesResponse struct {
+	Data resourcesWrapper `json:"data"`
 }
 
 type RulesEngineClient struct {
@@ -61,7 +65,7 @@ func (re *RulesEngineClient) GetResources() ([]Resource, error) {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return resourcesResp.Resources, nil
+	return resourcesResp.Data.Resources, nil
 }
 
 func (re *RulesEngineClient) AnalyzeRequest(ip, method, url, body string, headers map[string]string) (*AnalyzerResponse, error) {

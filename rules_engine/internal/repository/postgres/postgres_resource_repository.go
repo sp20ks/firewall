@@ -38,17 +38,47 @@ func (r *PostgresResourceRepository) GetActiveResources() ([]entity.Resource, er
 	return resources, nil
 }
 
-func (r *PostgresResourceRepository) CreateResource(resource *entity.Resource) error {
+func (r *PostgresResourceRepository) CreateResource(resource *entity.Resource) (*entity.Resource, error) {
 	resource.ID = uuid.New().String()
-	_, err := r.db.Exec("INSERT INTO resources (id, name, http_method, url, host, creator_id, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-		resource.ID, resource.Name, resource.HTTPMethod, resource.URL, resource.Host, resource.CreatorID, resource.IsActive)
-	return err
+
+	var createdResource entity.Resource
+	err := r.db.QueryRow(`
+		INSERT INTO resources (id, name, http_method, url, host, creator_id, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id, name, http_method, url, host, creator_id, is_active, created_at
+	`, resource.ID, resource.Name, resource.HTTPMethod, resource.URL, resource.Host, resource.CreatorID, resource.IsActive).Scan(
+		&createdResource.ID,
+		&createdResource.Name,
+		&createdResource.HTTPMethod,
+		&createdResource.URL,
+		&createdResource.Host,
+		&createdResource.CreatorID,
+		&createdResource.IsActive,
+		&createdResource.CreatedAt,
+	)
+	return &createdResource, err
 }
 
-func (r *PostgresResourceRepository) UpdateResource(resource *entity.Resource) error {
-	_, err := r.db.Exec("UPDATE resources SET name=$1, http_method=$2, url=$3, host=$4, is_active=$5 WHERE id=$6",
-		resource.Name, resource.HTTPMethod, resource.URL, resource.Host, resource.IsActive, resource.ID)
-	return err
+func (r *PostgresResourceRepository) UpdateResource(resource *entity.Resource) (*entity.Resource, error) {
+	var updatedResource entity.Resource
+
+	err := r.db.QueryRow(`
+		UPDATE resources
+		SET name=$1, http_method=$2, url=$3, host=$4, is_active=$5
+		WHERE id=$6
+		RETURNING id, name, http_method, url, host, creator_id, is_active, created_at
+	`, resource.Name, resource.HTTPMethod, resource.URL, resource.Host, resource.IsActive, resource.ID).Scan(
+		&updatedResource.ID,
+		&updatedResource.Name,
+		&updatedResource.HTTPMethod,
+		&updatedResource.URL,
+		&updatedResource.Host,
+		&updatedResource.CreatorID,
+		&updatedResource.IsActive,
+		&updatedResource.CreatedAt,
+	)
+
+	return &updatedResource, err
 }
 
 func (r *PostgresResourceRepository) GetResource(id string) (*entity.Resource, error) {

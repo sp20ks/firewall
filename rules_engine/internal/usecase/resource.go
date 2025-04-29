@@ -46,7 +46,7 @@ func (r *ResourceUseCase) GetResourceByID(id string) (*entity.Resource, error) {
 	return resource, nil
 }
 
-func (r *ResourceUseCase) Create(name, method, url, host, creatorID string, isActive *bool) error {
+func (r *ResourceUseCase) Create(name, method, url, host, creatorID string, isActive *bool) (*entity.Resource, error) {
 	resource := &entity.Resource{
 		Name:       name,
 		HTTPMethod: method,
@@ -59,10 +59,10 @@ func (r *ResourceUseCase) Create(name, method, url, host, creatorID string, isAc
 	return r.resourceRepo.CreateResource(resource)
 }
 
-func (r *ResourceUseCase) Update(id, name, method, url, host string, isActive *bool) error {
+func (r *ResourceUseCase) Update(id, name, method, url, host string, isActive *bool) (*entity.Resource, error) {
 	resource, err := r.GetResourceByID(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if name != "" {
