@@ -38,17 +38,45 @@ func (r *PostgresRuleRepository) GetActiveRules() ([]entity.Rule, error) {
 	return rules, nil
 }
 
-func (r *PostgresRuleRepository) CreateRule(rule *entity.Rule) error {
+func (r *PostgresRuleRepository) CreateRule(rule *entity.Rule) (*entity.Rule, error) {
 	rule.ID = uuid.New().String()
-	_, err := r.db.Exec("INSERT INTO rules (id, name, attack_type, action_type, creator_id, is_active) VALUES ($1, $2, $3, $4, $5, $6)",
-		rule.ID, rule.Name, rule.AttackType, rule.ActionType, rule.CreatorID, rule.IsActive)
-	return err
+
+	var createdRule entity.Rule
+	err := r.db.QueryRow(`
+		INSERT INTO rules (id, name, attack_type, action_type, creator_id, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, name, attack_type, action_type, creator_id, is_active, created_at
+	`, rule.ID, rule.Name, rule.AttackType, rule.ActionType, rule.CreatorID, rule.IsActive).Scan(
+		&createdRule.ID,
+		&createdRule.Name,
+		&createdRule.AttackType,
+		&createdRule.ActionType,
+		&createdRule.CreatorID,
+		&createdRule.IsActive,
+		&createdRule.CreatedAt,
+	)
+
+	return &createdRule, err
 }
 
-func (r *PostgresRuleRepository) UpdateRule(rule *entity.Rule) error {
-	_, err := r.db.Exec("UPDATE rules SET name=$1, attack_type=$2, action_type=$3, is_active=$4 WHERE id=$5",
-		rule.Name, rule.AttackType, rule.ActionType, rule.IsActive, rule.ID)
-	return err
+func (r *PostgresRuleRepository) UpdateRule(rule *entity.Rule) (*entity.Rule, error) {
+	var updatedRule entity.Rule
+
+	err := r.db.QueryRow(`
+		UPDATE rules
+		SET name=$1, attack_type=$2, action_type=$3, is_active=$4
+		WHERE id=$5
+		RETURNING id, name, attack_type, action_type, creator_id, is_active, created_at
+	`, rule.Name, rule.AttackType, rule.ActionType, rule.IsActive, rule.ID).Scan(
+		&updatedRule.ID,
+		&updatedRule.Name,
+		&updatedRule.AttackType,
+		&updatedRule.ActionType,
+		&updatedRule.CreatorID,
+		&updatedRule.IsActive,
+		&updatedRule.CreatedAt,
+	)
+	return &updatedRule, err
 }
 
 func (r *PostgresRuleRepository) GetRule(id string) (*entity.Rule, error) {

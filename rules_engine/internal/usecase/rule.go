@@ -19,7 +19,7 @@ func (r *RuleUseCase) Get() ([]entity.Rule, error) {
 	return r.repo.GetActiveRules()
 }
 
-func (r *RuleUseCase) Create(name, attackType, actionType, creatorID string, isActive *bool) error {
+func (r *RuleUseCase) Create(name, attackType, actionType, creatorID string, isActive *bool) (*entity.Rule, error) {
 	rule := &entity.Rule{
 		Name:       name,
 		AttackType: attackType,
@@ -32,14 +32,14 @@ func (r *RuleUseCase) Create(name, attackType, actionType, creatorID string, isA
 	return r.repo.CreateRule(rule)
 }
 
-func (r *RuleUseCase) Update(id, name, attackType, actionType string, isActive *bool) error {
+func (r *RuleUseCase) Update(id, name, attackType, actionType string, isActive *bool) (*entity.Rule, error) {
 	rule, err := r.repo.GetRule(id)
 	if err != nil {
-		return fmt.Errorf("error fetching rule: %w", err)
+		return nil, fmt.Errorf("error fetching rule: %w", err)
 	}
 
 	if rule == nil {
-		return fmt.Errorf("rule with id=%s not found", id)
+		return nil, fmt.Errorf("rule with id=%s not found", id)
 	}
 
 	if name != "" {
