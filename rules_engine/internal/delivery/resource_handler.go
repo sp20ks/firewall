@@ -42,12 +42,12 @@ type ResourcesResponse struct {
 func (h *ResourceHandler) HandleCreateResource(w http.ResponseWriter, r *http.Request) {
 	var req ResourceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		JSONResponse[any](w, http.StatusBadRequest, nil, err)
 		return
 	}
 
 	if req.Name == "" || req.HTTPMethod == "" || req.URL == "" || req.Host == "" || req.CreatorID == "" {
-		http.Error(w, "All fields (name, http_method, url, creator_id) must be provided", http.StatusBadRequest)
+		JSONResponse[any](w, http.StatusBadRequest, nil, errMissingFields())
 		return
 	}
 

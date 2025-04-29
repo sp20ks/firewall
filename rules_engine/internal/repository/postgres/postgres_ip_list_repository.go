@@ -48,17 +48,55 @@ func (r *PostgresIPListRepository) GetIPLists() ([]entity.IPList, error) {
 	return lists, nil
 }
 
-func (r *PostgresIPListRepository) CreateIPList(ipList *entity.IPList) error {
+func (r *PostgresIPListRepository) CreateIPList(ipList *entity.IPList) (*entity.IPList, error) {
 	ipList.ID = uuid.New().String()
-	_, err := r.db.Exec("INSERT INTO ip_lists (id, ip, list_type, creator_id) VALUES ($1, $2, $3, $4)",
-		ipList.ID, ipList.IP.String(), ipList.ListType, ipList.CreatorID)
-	return err
+
+	var list entity.IPList
+	var cidrStr string
+	err := r.db.QueryRow(`
+		INSERT INTO ip_lists (id, ip, list_type, creator_id)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, ip, list_type, creator_id, created_at
+	`, ipList.ID, ipList.IP.String(), ipList.ListType, ipList.CreatorID).
+		Scan(&list.ID, &cidrStr, &list.ListType, &list.CreatorID, &list.CreatedAt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ip, ipNet, err := net.ParseCIDR(cidrStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse CIDR: %w", err)
+	}
+	ipNet.IP = ip
+	list.IP = *ipNet
+
+	return &list, nil
 }
 
-func (r *PostgresIPListRepository) UpdateIPList(ipList *entity.IPList) error {
-	_, err := r.db.Exec("UPDATE ip_lists SET ip=$1, list_type=$2 WHERE id=$3",
-		ipList.IP.String(), ipList.ListType, ipList.ID)
-	return err
+func (r *PostgresIPListRepository) UpdateIPList(ipList *entity.IPList) (*entity.IPList, error) {
+	var list entity.IPList
+	var cidrStr string
+	err := r.db.QueryRow(`
+		UPDATE ip_lists
+		SET ip = $1, list_type = $2
+		WHERE id = $3
+		RETURNING id, ip, list_type, creator_id, created_at
+	`, ipList.IP.String(), ipList.ListType, ipList.ID).
+		Scan(&list.ID, &cidrStr, &list.ListType, &list.CreatorID, &list.CreatedAt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ip, ipNet, err := net.ParseCIDR(cidrStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse CIDR: %w", err)
+	}
+	ipNet.IP = ip
+	list.IP = *ipNet
+
+	return &list, nil
 }
 
 func (r *PostgresIPListRepository) GetIPList(id string) (*entity.IPList, error) {

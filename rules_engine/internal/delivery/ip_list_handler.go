@@ -4,10 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"rules-engine/internal/entity"
-	"rules-engine/internal/logger"
 	"rules-engine/internal/usecase"
-
-	"go.uber.org/zap"
 )
 
 type IPListHandler struct {
@@ -31,75 +28,57 @@ type IPListResponse struct {
 func (h *IPListHandler) HandleCreateIPList(w http.ResponseWriter, r *http.Request) {
 	var req IPListRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		JSONResponse[any](w, http.StatusBadRequest, nil, err)
 		return
 	}
 
 	if req.IP == "" || req.CreatorID == "" || req.ListType == "" {
-		http.Error(w, "All fields (ip, creator_id, list_type) must be provided", http.StatusBadRequest)
+		JSONResponse[any](w, http.StatusBadRequest, nil, errMissingFields())
 		return
 	}
 
-	err := h.ipListUseCase.Create(req.IP, req.ListType, req.CreatorID)
+	ipList, err := h.ipListUseCase.Create(req.IP, req.ListType, req.CreatorID)
 	if err != nil {
-		logger.Logger().Info("failed to create ip list", zap.Error(err))
-		http.Error(w, "Error while creating ip list", http.StatusBadRequest)
+		JSONResponse[any](w, http.StatusBadRequest, nil, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Ip list is created"))
+	JSONResponse(w, http.StatusOK, ipList, nil)
 }
 
 func (h *IPListHandler) HandleUpdateIPList(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
-		http.Error(w, "id must be provided", http.StatusBadRequest)
+		JSONResponse[any](w, http.StatusBadRequest, nil, errMissingID())
 		return
 	}
 
 	var req IPListRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		JSONResponse[any](w, http.StatusBadRequest, nil, err)
 		return
 	}
 
 	if req.IP == "" && req.ListType == "" {
-		http.Error(w, "At least one field must be provided for update", http.StatusBadRequest)
+		JSONResponse[any](w, http.StatusBadRequest, nil, errMissingFields())
 		return
 	}
 
-	err := h.ipListUseCase.Update(id, req.IP, req.ListType)
+	ipList, err := h.ipListUseCase.Update(id, req.IP, req.ListType)
 	if err != nil {
-		logger.Logger().Info("failed to update ip list", zap.Error(err))
-		http.Error(w, "Error while updating ip list", http.StatusBadRequest)
+		JSONResponse[any](w, http.StatusBadRequest, nil, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Ip list is updated"))
+	JSONResponse(w, http.StatusOK, ipList, nil)
 }
 
 func (h *IPListHandler) HandleGetIPLists(w http.ResponseWriter, r *http.Request) {
 	lists, err := h.ipListUseCase.Get()
 	if err != nil {
-		logger.Logger().Info("failed to get ip lists", zap.Error(err))
-		http.Error(w, "Error while fetching ip lists", http.StatusInternalServerError)
+		JSONResponse[any](w, http.StatusInternalServerError, nil, err)
 		return
 	}
 
-	if len(lists) == 0 {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("No ip lists found"))
-		return
-	}
-
-	response := IPListResponse{IPLists: lists}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		logger.Logger().Info("failed to encode ip lists", zap.Error(err))
-		http.Error(w, "Error while encoding ip lists", http.StatusInternalServerError)
-		return
-	}
+	JSONResponse(w, http.StatusOK, IPListResponse{IPLists: lists}, nil)
 }

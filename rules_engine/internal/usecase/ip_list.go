@@ -19,7 +19,7 @@ func (i *IPListUseCase) Get() ([]entity.IPList, error) {
 	return i.repo.GetIPLists()
 }
 
-func (i *IPListUseCase) Create(cidrStr, listType, CreatorID string) error {
+func (i *IPListUseCase) Create(cidrStr, listType, CreatorID string) (*entity.IPList, error) {
 	list := &entity.IPList{
 		ListType:  listType,
 		CreatorID: CreatorID,
@@ -27,7 +27,7 @@ func (i *IPListUseCase) Create(cidrStr, listType, CreatorID string) error {
 
 	ip, ipNet, err := net.ParseCIDR(cidrStr)
 	if err != nil {
-		return fmt.Errorf("failed to parse CIDR: %w", err)
+		return nil, fmt.Errorf("failed to parse CIDR: %w", err)
 	}
 	ipNet.IP = ip
 	list.IP = *ipNet
@@ -35,20 +35,20 @@ func (i *IPListUseCase) Create(cidrStr, listType, CreatorID string) error {
 	return i.repo.CreateIPList(list)
 }
 
-func (i *IPListUseCase) Update(id, cidrStr, listType string) error {
+func (i *IPListUseCase) Update(id, cidrStr, listType string) (*entity.IPList, error) {
 	list, err := i.repo.GetIPList(id)
 	if err != nil {
-		return fmt.Errorf("error fetching ip list: %w", err)
+		return nil, fmt.Errorf("error fetching ip list: %w", err)
 	}
 
 	if list == nil {
-		return fmt.Errorf("ip list with id=%s not found", id)
+		return nil, fmt.Errorf("ip list with id=%s not found", id)
 	}
 
 	if cidrStr != "" {
 		ip, ipNet, err := net.ParseCIDR(cidrStr)
 		if err != nil {
-			return fmt.Errorf("failed to parse CIDR: %w", err)
+			return nil, fmt.Errorf("failed to parse CIDR: %w", err)
 		}
 		ipNet.IP = ip
 		list.IP = *ipNet
