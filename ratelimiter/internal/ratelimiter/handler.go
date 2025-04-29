@@ -14,16 +14,16 @@ func HandleCheckLimit(ipRateLimiter *IPRateLimiter) http.HandlerFunc {
 
 		if ip == "" {
 			l.Info("missing required 'ip' parameter")
-			http.Error(w, "Missing required 'ip' parameter", http.StatusBadRequest)
+			WriteJSONResponse(w, NewErrorResponse("missing required 'ip' parameter", http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 
 		if err := ipRateLimiter.Allow(r.Context(), ip); err != nil {
 			l.Info("rate limit exceeded for IP", zap.String("ip", ip), zap.Error(err))
-			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+			WriteJSONResponse(w, NewErrorResponse("rate limit exceeded", http.StatusTooManyRequests), http.StatusTooManyRequests)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		WriteJSONResponse(w, NewSuccessResponse("request allowed", http.StatusOK), http.StatusOK)
 	}
 }

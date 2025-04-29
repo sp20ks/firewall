@@ -7,10 +7,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-
-	"go.uber.org/zap"
-	rules "proxy/internal/clients/rules_engine_service"
 	"proxy/internal/logger"
+
+	rules "proxy/internal/clients/rules_engine_service"
 )
 
 func (ph *ProxyHandler) modifyRequest(ctx context.Context, r *http.Request, resource rules.Resource) (*http.Request, error) {
