@@ -3,6 +3,7 @@ package main
 import (
 	"auth/internal/config"
 	"auth/internal/delivery"
+	"auth/internal/delivery/middleware"
 	"auth/internal/logger"
 	"auth/internal/repository/postgres"
 	"auth/internal/usecase"
@@ -46,7 +47,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:    cfg.Address,
-		Handler: mux,
+		Handler: middleware.CorsMiddleware(mux),
 	}
 
 	go func() {
