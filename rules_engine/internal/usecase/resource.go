@@ -43,6 +43,28 @@ func (r *ResourceUseCase) GetResourceByID(id string) (*entity.Resource, error) {
 	if resource == nil {
 		return nil, fmt.Errorf("resource not found: id=%s", id)
 	}
+
+	ipLists, err := r.iPListUseCase.GetIPListsForResource(resource.ID)
+	if err != nil {
+		logger.Logger().Info(
+			"error fetching IP lists for resource",
+			zap.String("resource_id", resource.ID),
+			zap.Error(err),
+		)
+	} else {
+		resource.IPLists = ipLists
+	}
+	rules, err := r.ruleUseCase.GetRulesForResource(resource.ID)
+	if err != nil {
+		logger.Logger().Info(
+			"error fetching rules for resource",
+			zap.String("resource_id", resource.ID),
+			zap.Error(err),
+		)
+	} else {
+		resource.Rules = rules
+	}
+
 	return resource, nil
 }
 

@@ -94,6 +94,17 @@ func (h *ResourceHandler) HandleGetActiveResources(w http.ResponseWriter, r *htt
 	JSONResponse(w, http.StatusOK, ResourcesResponse{Resources: resources}, nil)
 }
 
+func (h *ResourceHandler) HandleGetResourceByID(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	resource, err := h.resourceUseCase.GetResourceByID(id)
+	if err != nil {
+		JSONResponse[any](w, http.StatusInternalServerError, nil, err)
+		return
+	}
+
+	JSONResponse(w, http.StatusOK, resource, nil)
+}
+
 func (h *ResourceHandler) HandleAttachIPList(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {

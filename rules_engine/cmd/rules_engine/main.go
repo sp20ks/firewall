@@ -58,6 +58,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /resources", resourceHandler.HandleGetActiveResources)
+	mux.HandleFunc("GET /resources/{id}", resourceHandler.HandleGetResourceByID)
 	mux.Handle("POST /resources", authMiddleware(http.HandlerFunc(resourceHandler.HandleCreateResource)))
 	mux.Handle("POST /resources/{id}/attach_ip_list", authMiddleware(http.HandlerFunc(resourceHandler.HandleAttachIPList)))
 	mux.Handle("POST /resources/{id}/detach_ip_list", authMiddleware(http.HandlerFunc(resourceHandler.HandleDetachIPList)))
@@ -77,7 +78,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:    cfg.Address,
-		Handler: mux,
+		Handler: middleware.CorsMiddleware(mux),
 	}
 
 	go func() {
