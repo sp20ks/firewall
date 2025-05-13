@@ -3,6 +3,7 @@ package delivery
 import (
 	"encoding/json"
 	"net/http"
+	"rules-engine/internal/delivery/middleware"
 	"rules-engine/internal/entity"
 	"rules-engine/internal/usecase"
 )
@@ -30,6 +31,10 @@ func (h *IPListHandler) HandleCreateIPList(w http.ResponseWriter, r *http.Reques
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		JSONResponse[any](w, http.StatusBadRequest, nil, err)
 		return
+	}
+
+	if user, ok := middleware.GetUserFromContext(r.Context()); ok {
+		req.CreatorID = user.ID
 	}
 
 	if req.IP == "" || req.CreatorID == "" || req.ListType == "" {
