@@ -108,7 +108,7 @@ func (r *ResourceUseCase) Update(id, name, method, url, host string, isActive *b
 
 // TODO: добавить флаг, при котором отправляются вместе с ресурсами правила и списки
 func (r *ResourceUseCase) Get() ([]entity.Resource, error) {
-	resources, err := r.resourceRepo.GetActiveResources()
+	resources, err := r.resourceRepo.GetResources()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch resources: %w", err)
 	}

@@ -20,8 +20,8 @@ func NewPostgresResourceRepository(db *sql.DB) repository.ResourceRepository {
 	return &PostgresResourceRepository{db: db}
 }
 
-func (r *PostgresResourceRepository) GetActiveResources() ([]entity.Resource, error) {
-	rows, err := r.db.Query("SELECT id, name, http_method, url, host, is_active, created_at, creator_id FROM resources WHERE is_active = TRUE")
+func (r *PostgresResourceRepository) GetResources() ([]entity.Resource, error) {
+	rows, err := r.db.Query("SELECT id, name, http_method, url, host, is_active, created_at, creator_id FROM resources")
 	if err != nil {
 		return nil, err
 	}

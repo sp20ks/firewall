@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"proxy/internal/config"
-	"proxy/internal/logger"
-	"proxy/internal/proxy"
 	"syscall"
 	"time"
 
+	"go.uber.org/zap"
+	"proxy/internal/config"
+	"proxy/internal/logger"
+	"proxy/internal/proxy"
 )
 
 type Server struct {

@@ -20,8 +20,8 @@ func NewPostgresRuleRepository(db *sql.DB) repository.RuleRepository {
 	return &PostgresRuleRepository{db: db}
 }
 
-func (r *PostgresRuleRepository) GetActiveRules() ([]entity.Rule, error) {
-	rows, err := r.db.Query("SELECT id, name, attack_type, action_type, is_active, created_at, creator_id FROM rules WHERE is_active = TRUE")
+func (r *PostgresRuleRepository) GetRules() ([]entity.Rule, error) {
+	rows, err := r.db.Query("SELECT id, name, attack_type, action_type, is_active, created_at, creator_id FROM rules")
 	if err != nil {
 		return nil, err
 	}

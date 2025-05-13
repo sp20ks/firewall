@@ -16,7 +16,7 @@ func NewRuleUseCase(repo repository.RuleRepository) *RuleUseCase {
 }
 
 func (r *RuleUseCase) Get() ([]entity.Rule, error) {
-	return r.repo.GetActiveRules()
+	return r.repo.GetRules()
 }
 
 func (r *RuleUseCase) Create(name, attackType, actionType, creatorID string, isActive *bool) (*entity.Rule, error) {
