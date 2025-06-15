@@ -105,7 +105,7 @@ func (a *AnalyzerUseCase) applyXSSRule(url, body string, rule entity.Rule) *enti
 		xssDetected = true
 		switch rule.ActionType {
 		case entity.ActionSanitize:
-			modifiedBody = a.sqlPattern.ReplaceAllString(body, "")
+			modifiedBody = a.xssPattern.ReplaceAllString(body, "")
 		case entity.ActionEscape:
 			modifiedBody = escapeHTML(body)
 		}
@@ -116,7 +116,7 @@ func (a *AnalyzerUseCase) applyXSSRule(url, body string, rule entity.Rule) *enti
 		xssDetected = true
 		switch rule.ActionType {
 		case entity.ActionSanitize:
-			modifiedURL = a.sqlPattern.ReplaceAllString(decodedURL, "")
+			modifiedURL = a.xssPattern.ReplaceAllString(decodedURL, "")
 		case entity.ActionEscape:
 			modifiedURL = escapeHTML(decodedURL)
 		}
